@@ -14,16 +14,21 @@ ls -t t/*.t | sort >> MANIFEST~
 diff MANIFEST MANIFEST~ > /dev/null || doit /bin/mv -f MANIFEST~ MANIFEST
 /bin/rm -f MANIFEST~
 
-[ -f Makefile ] && doit rm -f Makefile
+[ -f Makefile ] && doit make clean
 doit perl Makefile.PL
 doit make
 doit make disttest
 
 main=`grep 'lib/.*pm$' < MANIFEST | head -1`
 [ "$main" == "" ] && die "main module is not found in MANIFEST"
-doit pod2text $main > README
+doit pod2text $main > README~
+diff README README~ > /dev/null || doit /bin/mv -f README~ README
+/bin/rm -f README~
 
 doit make dist
-doit /bin/rm -fr blib pm_to_blib
+[ -d blib ] && doit /bin/rm -fr blib
+[ -f pm_to_blib ] && doit /bin/rm -f pm_to_blib
+[ -f Makefile ] && doit /bin/rm -f Makefile
+[ -f Makefile.old ] && doit /bin/rm -f Makefile.old
 
 ls -lt *.tar.gz | head -1
