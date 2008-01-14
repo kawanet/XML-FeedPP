@@ -33,3 +33,4 @@ t/25_sort_timezone.t
 t/26_atom10_parse.t
 t/27_atom03_parse.t
 t/28_atom10_write.t
+t/29_rfc2822.t

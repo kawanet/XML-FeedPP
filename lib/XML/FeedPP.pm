@@ -371,7 +371,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.33";
+$VERSION = "0.34";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -2164,13 +2164,17 @@ my $tz_min  = int( $tz_offset / 60 ) % 60;
 my $rfc1123_regexp = qr{
     ^(?:[A-Za-z]+,\s*)? (\d+)\s+ ([A-Za-z]+)\s+ (\d+)\s+
     (\d+):(\d+)(?::(\d+)(?:\.\d*)?)?\s*
-    ([\+\-]\d+:?\d{2})?
-}x;
+    ([\+\-]\d+:?\d{2} | [ECMP][DS]T )?
+}xi;
 my $w3cdtf_regexp = qr{
     ^(\d+)-(\d+)-(\d+)
     (?:T(\d+):(\d+)(?::(\d+)(?:\.\d*)?\:?)?
     ([\+\-]\d+:?\d{2})?|$)
 }x;
+my $tzmap = {qw(
+    EDT -4  EST -5  CDT -5  CST -6
+    MDT -6  MST -7  PDT -7  PST -8
+)};
 
 sub epoch_to_w3cdtf {
     my $epoch = shift;
@@ -2199,8 +2203,9 @@ sub rfc1123_to_w3cdtf {
     my ( $mday, $mon, $year, $hour, $min, $sec, $tz ) = ( $str =~ $rfc1123_regexp );
     return unless ( $year && $mon && $mday );
     $mon = $MoY{ uc($mon) } or return;
-    if ( defined $tz && $tz =~ m/^([\+\-]\d+):?(\d{2})$/ ) {
-        $tz = sprintf( '%+03d:%02d', $1, $2 );
+    if ( defined $tz && $tz ne '' && $tz ne 'GMT' ) {
+        my $off = &get_tz_offset($tz) / 60;
+        $tz = sprintf( '%+03d:%02d', $off/60, $off%60 );
     }
     else {
         $tz = 'Z';
@@ -2219,8 +2224,9 @@ sub w3cdtf_to_rfc1123 {
     $sec ||= 0;
     my $epoch = Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 );
     my $wday = ( gmtime($epoch) )[6];
-    if ( defined $tz && $tz =~ m/^([\+\-]\d+):?(\d{2})$/ ) {
-        $tz = sprintf( '%+03d%02d', $1, $2 );
+    if ( defined $tz && $tz ne '' && $tz ne 'Z' ) {
+        my $off = &get_tz_offset($tz) / 60;
+        $tz = sprintf( '%+03d%02d', $off/60, $off%60 );
     }
     else {
         $tz = 'GMT';
@@ -2258,6 +2264,7 @@ sub w3cdtf_to_epoch {
 sub get_tz_offset {
     my $tz = shift;
     return 0 unless defined $tz;
+    return $tzmap->{$tz}*60*60 if exists $tzmap->{$tz};
     return 0 unless( $tz =~ m/^([\+\-]?)(\d+):?(\d{2})$/ );
     my( $pm, $ho, $mi ) = ( $1, $2, $3 );
     my $off = $ho * 60 + $mi;

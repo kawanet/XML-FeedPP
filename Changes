@@ -1,5 +1,9 @@
 # XML::FeedPP Changes
 
+2008/01/14 (0.34)
+    * add time zones supported: UT EST EDT CST CDT MST MDT PST PDT
+      http://www.rfc-editor.org/rfc/rfc2822.txt
+
 2008/01/05 (0.33)
     * Subversion on Google Code
       http://xml-treepp.googlecode.com/svn/trunk/XML-FeedPP/
