@@ -15,6 +15,7 @@ diff MANIFEST MANIFEST~ > /dev/null || doit /bin/mv -f MANIFEST~ MANIFEST
 /bin/rm -f MANIFEST~
 
 [ -f Makefile ] && doit make clean
+[ -f META.yml ] || touch META.yml
 doit perl Makefile.PL
 doit make
 doit make disttest
