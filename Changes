@@ -1,5 +1,13 @@
 # XML::FeedPP Changes
 
+2008/05/18 (0.35)
+    * supports multiple <rdf:Seq> which is invalid though
+      http://www.kawa.net/works/perl/feedpp/feedpp.html#com-2008-05-17T13:13:33Z
+      "Pseudo-hashes are deprecated at FeedPP.pm line 1085."
+      (thanks to nasano)
+    * accepts some invalid W3CDTF format
+    * merge() returns $self
+
 2008/01/14 (0.34)
     * add time zones supported: UT EST EDT CST CDT MST MDT PST PDT
       http://www.rfc-editor.org/rfc/rfc2822.txt

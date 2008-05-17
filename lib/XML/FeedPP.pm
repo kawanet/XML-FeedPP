@@ -371,7 +371,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.34";
+$VERSION = "0.35";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -513,7 +513,7 @@ sub merge {
     $self->merge_channel($target);
     $self->merge_item($target);
     $self->normalize();
-    undef;
+    $self;
 }
 
 sub merge_channel {
@@ -1082,6 +1082,19 @@ sub init_feed {
     $self->{'rdf:RDF'}->{channel}->{items}->{'rdf:Seq'} ||= {};
 
     my $rdfseq = $self->{'rdf:RDF'}->{channel}->{items}->{'rdf:Seq'};
+
+    # http://www.kawa.net/works/perl/feedpp/feedpp.html#com-2008-05-17T13:13:33Z
+    if ( UNIVERSAL::isa( $rdfseq, 'ARRAY' ) ) {
+        my $num1 = scalar @$rdfseq;
+        my $num2 = scalar grep { ref $_ && exists $_->{'rdf:li'} && ref $_->{'rdf:li'} } @$rdfseq;
+        my $num3 = scalar grep { ref $_ && keys %$_ == 1 } @$rdfseq;
+        if ( $num1 && $num1 == $num2 && $num1 == $num3 ) {
+            my $newli = [ map { @{$_->{'rdf:li'}} } @$rdfseq ];
+            $rdfseq = { 'rdf:li' => $newli };
+            $self->{'rdf:RDF'}->{channel}->{items}->{'rdf:Seq'} = $rdfseq;
+        }
+    }
+
     $rdfseq->{'rdf:li'} ||= [];
     if ( UNIVERSAL::isa( $rdfseq->{'rdf:li'}, "HASH" ) ) {
         $rdfseq->{'rdf:li'} = [ $rdfseq->{'rdf:li'} ];
@@ -2168,7 +2181,7 @@ my $rfc1123_regexp = qr{
 }xi;
 my $w3cdtf_regexp = qr{
     ^(\d+)-(\d+)-(\d+)
-    (?:T(\d+):(\d+)(?::(\d+)(?:\.\d*)?\:?)?
+    (?:T(\d+):(\d+)(?::(\d+)(?:\.\d*)?\:?)?\s*
     ([\+\-]\d+:?\d{2})?|$)
 }x;
 my $tzmap = {qw(
