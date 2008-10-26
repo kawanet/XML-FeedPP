@@ -1,5 +1,10 @@
 # XML::FeedPP Changes
 
+2008/10/26 (0.36)
+    * RFC1123 allows two-digit dates
+      http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=503260
+      (thanks to Anthony DeRobertis)
+
 2008/05/18 (0.35)
     * supports multiple <rdf:Seq> which is invalid though
       http://www.kawa.net/works/perl/feedpp/feedpp.html#com-2008-05-17T13:13:33Z
