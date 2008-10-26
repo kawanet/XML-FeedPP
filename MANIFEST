@@ -35,3 +35,4 @@ t/27_atom03_parse.t
 t/28_atom10_write.t
 t/29_rfc2822.t
 t/30_invalid_rdfseq.t
+t/31_two_digit_date.t

@@ -371,7 +371,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.35";
+$VERSION = "0.36";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
