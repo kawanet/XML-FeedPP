@@ -350,7 +350,7 @@ Yusuke Kawasaki, http://www.kawa.net/
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2006-2008 Yusuke Kawasaki. All rights reserved.
+Copyright (c) 2006-2009 Yusuke Kawasaki. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
@@ -371,7 +371,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.36";
+$VERSION = "0.37";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -799,14 +799,17 @@ sub new {
 sub init_feed {
     my $self = shift or return;
 
-    $self->{rss}               ||= {};
+    $self->{rss} ||= {};
+    if ( ! UNIVERSAL::isa( $self->{rss}, 'HASH' ) ) {
+        Carp::croak "Invalid RSS format: $self->{rss}";
+    }
     $self->{rss}->{'-version'} ||= $XML::FeedPP::RSS20_VERSION;
 
     $self->{rss}->{channel} ||= XML::FeedPP::Element->new();
     XML::FeedPP::Element->ref_bless( $self->{rss}->{channel} );
 
     $self->{rss}->{channel}->{item} ||= [];
-    if ( UNIVERSAL::isa( $self->{rss}->{channel}->{item}, "HASH" ) ) {
+    if ( UNIVERSAL::isa( $self->{rss}->{channel}->{item}, 'HASH' ) ) {
 
         # only one item
         $self->{rss}->{channel}->{item} = [ $self->{rss}->{channel}->{item} ];
@@ -1001,8 +1004,15 @@ sub guid {
     my $self = shift;
     my $guid = shift;
     return $self->get_value("guid") unless defined $guid;
-    my $perma = shift || "true";
-    $self->set_value( guid => $guid, isPermaLink => $perma );
+    my @args = @_;
+    if ( ! scalar @args ) {
+        # default
+        @args = ( 'isPermaLink' => 'true' );
+    } elsif ( scalar @args == 1 ) {
+        # XML::FeedPP 0.36's behavior
+        unshift( @args, 'isPermaLink' );
+    }
+    $self->set_value( guid => $guid, @args );
 }
 
 sub pubDate {
@@ -1071,6 +1081,9 @@ sub init_feed {
     my $self = shift or return;
 
     $self->{'rdf:RDF'} ||= {};
+    if ( ! UNIVERSAL::isa( $self->{'rdf:RDF'}, 'HASH' ) ) {
+        Carp::croak "Invalid RDF format: $self->{'rdf:RDF'}";
+    }
     $self->xmlns( 'xmlns'     => $XML::FeedPP::XMLNS_RSS );
     $self->xmlns( 'xmlns:rdf' => $XML::FeedPP::XMLNS_RDF );
     $self->xmlns( 'xmlns:dc'  => $XML::FeedPP::XMLNS_DC );
@@ -1096,11 +1109,11 @@ sub init_feed {
     }
 
     $rdfseq->{'rdf:li'} ||= [];
-    if ( UNIVERSAL::isa( $rdfseq->{'rdf:li'}, "HASH" ) ) {
+    if ( UNIVERSAL::isa( $rdfseq->{'rdf:li'}, 'HASH' ) ) {
         $rdfseq->{'rdf:li'} = [ $rdfseq->{'rdf:li'} ];
     }
     $self->{'rdf:RDF'}->{item} ||= [];
-    if ( UNIVERSAL::isa( $self->{'rdf:RDF'}->{item}, "HASH" ) ) {
+    if ( UNIVERSAL::isa( $self->{'rdf:RDF'}->{item}, 'HASH' ) ) {
 
         # force array when only one item exist
         $self->{'rdf:RDF'}->{item} = [ $self->{'rdf:RDF'}->{item} ];
@@ -1479,7 +1492,7 @@ sub image {
     my $title = shift;
 
     my $link = $self->{feed}->{link} || [];
-    $link = [$link] if UNIVERSAL::isa( $link, "HASH" );
+    $link = [$link] if UNIVERSAL::isa( $link, 'HASH' );
     my $icon = (
         grep {
                ref $_
@@ -1506,10 +1519,10 @@ sub image {
             $newicon->{'-type'}  = $type if $type;
             $newicon->{'-title'} = $title if $title;
             my $flink = $self->{feed}->{link};
-            if ( UNIVERSAL::isa( $flink, "ARRAY" )) {
+            if ( UNIVERSAL::isa( $flink, 'ARRAY' )) {
                 push( @$flink, $newicon );
             }
-            elsif ( UNIVERSAL::isa( $flink, "HASH" )) {
+            elsif ( UNIVERSAL::isa( $flink, 'HASH' )) {
                 $self->{feed}->{link} = [ $flink, $newicon ];
             }
             else {
@@ -1541,6 +1554,10 @@ sub init_feed {
 
     $self->{feed} ||= XML::FeedPP::Element->new();
     XML::FeedPP::Element->ref_bless( $self->{feed} );
+
+    if ( ! UNIVERSAL::isa( $self->{feed}, 'HASH' ) ) {
+        Carp::croak "Invalid Atom 0.3 format: $self->{feed}";
+    }
 
     $self->xmlns( 'xmlns' => $XML::FeedPP::XMLNS_ATOM03 );
     $self->{feed}->{'-version'} ||= $XML::FeedPP::ATOM03_VERSION;
@@ -1601,7 +1618,7 @@ sub link {
     my $href = shift;
 
     my $link = $self->{feed}->{link} || [];
-    $link = [$link] if UNIVERSAL::isa( $link, "HASH" );
+    $link = [$link] if UNIVERSAL::isa( $link, 'HASH' );
     $link = [ grep { ref $_ } @$link ];
     $link = [ grep {
         ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
@@ -1655,6 +1672,10 @@ sub init_feed {
 
     $self->{feed} ||= XML::FeedPP::Element->new();
     XML::FeedPP::Element->ref_bless( $self->{feed} );
+
+    if ( ! UNIVERSAL::isa( $self->{feed}, 'HASH' ) ) {
+        Carp::croak "Invalid Atom 1.0 format: $self->{feed}";
+    }
 
     $self->xmlns( 'xmlns' => $XML::FeedPP::XMLNS_ATOM10 );
 #   $self->{feed}->{'-version'} ||= $XML::FeedPP::ATOM10_VERSION;
@@ -1717,7 +1738,7 @@ sub link {
     my $href = shift;
 
     my $link = $self->{feed}->{link} || [];
-    $link = [$link] if UNIVERSAL::isa( $link, "HASH" );
+    $link = [$link] if UNIVERSAL::isa( $link, 'HASH' );
     $link = [ grep { ref $_ } @$link ];
     $link = [ grep {
         ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
@@ -2057,8 +2078,8 @@ sub get {
     }
     elsif ( defined $attr ) {                   # node@attribute
         return unless ref $node->{$tagname};
-        if ( UNIVERSAL::isa( $node->{$tagname}, "ARRAY" )) {
-            my $list = [ map { $_->{'-'.$attr} } 
+        if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+            my $list = [ map { $_->{'-'.$attr} }
                          grep { exists $_->{'-'.$attr} }
                          @{$node->{$tagname}} ];
             return wantarray ? @$list : shift @$list;
@@ -2099,14 +2120,29 @@ sub get_value {
     my $self = shift;
     my $elem = shift;
     return unless exists $self->{$elem};
-    return $self->{$elem} unless ref $self->{$elem};
-    return $self->{$elem}->{'#text'} if exists $self->{$elem}->{'#text'};
+    my $value = $self->{$elem} or return;
+    return $value unless ref $value;
+
+    # multiple elements
+    if ( UNIVERSAL::isa( $value, 'ARRAY' )) {
+        if ( wantarray ) {
+            return map { ref $_ && exists $_->{'#text'}
+                         ? $_->{'#text'} : $_ } @$value;
+        } else {
+            return ref $value->[0] && exists $value->[0]->{'#text'}
+                   ? $value->[0]->{'#text'} : $value->[0];
+        }
+    }
+
+    # text node of an element with attributes
+    return $value->{'#text'} if exists $value->{'#text'};
+
     # a hack for atom: <content type="xhtml"><div>...</div></content>
-    my $child = [ grep { /^[^\-\#]/ } keys %{$self->{$elem}} ];
-    if ( exists $self->{$elem}->{'-type'}
-        && ($self->{$elem}->{'-type'} eq "xhtml")
+    my $child = [ grep { /^[^\-\#]/ } keys %$value ];
+    if ( exists $value->{'-type'}
+        && ($value->{'-type'} eq "xhtml")
         && scalar @$child == 1) {
-        return &get_value( $self->{$elem}, $child->[0] );
+        return &get_value( $value, $child->[0] );
     }
     return;
 }

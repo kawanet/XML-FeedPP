@@ -36,3 +36,5 @@ t/28_atom10_write.t
 t/29_rfc2822.t
 t/30_invalid_rdfseq.t
 t/31_two_digit_date.t
+t/32_two_titles.t
+t/33_guid.t

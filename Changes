@@ -1,5 +1,13 @@
 # XML::FeedPP Changes
 
+2009/01/18 (0.37)
+    * fixed #42472: items with 2 titles break the parser
+      (thanks to thaabit)
+      http://rt.cpan.org/Public/Bug/Display.html?id=42472
+    * fixed #41771: possible bug in $item->guid
+      (thanks to PriggeScottM)
+      http://rt.cpan.org/Public/Bug/Display.html?id=41771
+
 2008/10/26 (0.36)
     * RFC1123 and RSS spec allow two-digit date format
       http://rt.cpan.org/Public/Bug/Display.html?id=36890
@@ -94,5 +102,6 @@
 
 # http://groups.yahoo.com/group/xml-feedpp/
 # http://annocpan.org/dist/XML-FeedPP/
+# http://rt.cpan.org/Public/Dist/Display.html?Name=XML-FeedPP
 # http://www.kawa.net/works/perl/feedpp/feedpp-e.html       (English)
 # http://www.kawa.net/works/perl/feedpp/feedpp.html#changes (Japanese)
