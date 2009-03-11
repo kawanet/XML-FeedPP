@@ -1,5 +1,15 @@
 # XML::FeedPP Changes
 
+2009/03/12 (0.38)
+    * fixed #36270: supports no XMLDecl on load() method
+      https://rt.cpan.org/Ticket/Display.html?id=36270
+      (thanks to hirsch)
+    * supports category element which has type="" or domain="" attribute
+      ex. http://thesteampunkhome.blogspot.com/feeds/posts/default
+      http://weather.livedoor.com/forecast/rss/index.xml
+      http://picasaweb.google.com/data/feed/base/user/www.kawa.net/?alt=rss
+      (thanks to greg, tsubok and t-saitoh)
+
 2009/01/18 (0.37)
     * fixed #42472: items with 2 titles break the parser
       (thanks to thaabit)

@@ -6,7 +6,7 @@ my $opt = {
     VERSION_FROM        => 'lib/XML/FeedPP.pm',
     PREREQ_PM           => {
         'Test::More'        => '0',
-        'XML::TreePP'       => '0.37',
+        'XML::TreePP'       => '0.38',
     },
 };
 

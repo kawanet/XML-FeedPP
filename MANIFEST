@@ -38,3 +38,5 @@ t/30_invalid_rdfseq.t
 t/31_two_digit_date.t
 t/32_two_titles.t
 t/33_guid.t
+t/34_category_type.t
+t/35_no_xml_decl.t

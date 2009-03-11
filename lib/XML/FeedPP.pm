@@ -371,7 +371,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.37";
+$VERSION = "0.38";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -478,7 +478,7 @@ sub load {
     if ( $source =~ m#^https?://#s ) {
         $tree = $tpp->parsehttp( GET => $source );
     }
-    elsif ( $source =~ m#(^\s*)(<\?xml.*\?>|<\!DOCTYPE)#i ) {
+    elsif ( $source =~ m#(^\s*)(<(\?xml|!DOCTYPE|rdf:RDF|rss|feed)\W)#i ) {
         $tree = $tpp->parse($source);
     }
     elsif ( $source !~ /[\r\n]/ && -f $source ) {
@@ -889,7 +889,7 @@ sub get_item {
 sub sort_item {
     my $self = shift;
     my $list = $self->{rss}->{channel}->{item} or return;
-    my $epoch = [ map { $_->get_pubDate_epoch() } @$list ];
+    my $epoch = [ map { $_->get_pubDate_epoch() || 0 } @$list ];
     my $sorted = [ map { $list->[$_] } sort {
         $epoch->[$b] <=> $epoch->[$a]
     } 0 .. $#$list ];
@@ -1206,7 +1206,7 @@ sub get_item {
 sub sort_item {
     my $self = shift;
     my $list = $self->{'rdf:RDF'}->{item} or return;
-    my $epoch = [ map { $_->get_pubDate_epoch() } @$list ];
+    my $epoch = [ map { $_->get_pubDate_epoch() || 0 } @$list ];
     my $sorted = [ map { $list->[$_] } sort {
         $epoch->[$b] <=> $epoch->[$a]
     } 0 .. $#$list ];
@@ -1441,7 +1441,7 @@ sub get_item {
 sub sort_item {
     my $self = shift;
     my $list = $self->{feed}->{entry} or return;
-    my $epoch = [ map { $_->get_pubDate_epoch() } @$list ];
+    my $epoch = [ map { $_->get_pubDate_epoch() || 0 } @$list ];
     my $sorted = [ map { $list->[$_] } sort {
         $epoch->[$b] <=> $epoch->[$a]
     } 0 .. $#$list ];
@@ -1972,7 +1972,8 @@ sub title {
 sub category {
     my $self = shift;
     if ( scalar @_ ) {
-        my $list = [ map {{-term=>$_};} @_ ];
+        my $cate = ref $_[0] ? $_[0] : \@_;
+        my $list = [ map {+{-term=>$_}} @$cate ];
         $self->{category} = ( scalar @$list > 1 ) ? $list : shift @$list;
     }
     else {
@@ -2097,14 +2098,14 @@ sub get_set_array {
     my $self = shift;
     my $elem = shift;
     my $value = shift;
-    if ( defined $value ) {
+    if ( ref $value ) {
+        $self->{$elem} = $value;
+    } elsif ( defined $value ) {
         $value = [ $value, @_ ] if scalar @_;
         $self->{$elem} = $value;
     } else {
-        return unless exists $self->{$elem};
-        my $list = $self->{$elem};
-        return $list unless ref $list;
-        return ( scalar @$list > 1 ) ? $list : shift @$list;
+        my @ret = $self->get_value($elem);
+        return scalar @ret > 1 ? \@ret : $ret[0];
     }
 }
 
