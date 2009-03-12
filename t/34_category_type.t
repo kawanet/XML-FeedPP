@@ -1,39 +1,39 @@
 # ----------------------------------------------------------------
     use strict;
-    use Test::More tests => 106;
+    use Test::More tests => 113;
     BEGIN { use_ok('XML::FeedPP') };
 # ----------------------------------------------------------------
 {
     my $rss = <<'EOT';
-<rss version="2.0"> 
-    <channel> 
-        <item> 
+<rss version="2.0">
+    <channel>
+        <item>
             <link>http://www.example.com/1.html</link>
-            <category>cate_a</category> 
-        </item> 
-        <item> 
+            <category>cate_a</category>
+        </item>
+        <item>
             <link>http://www.example.com/2.html</link>
-            <category>cate_b</category> 
-            <category>cate_c</category> 
+            <category>cate_b</category>
+            <category>cate_c</category>
         </item>
-        <item> 
+        <item>
             <link>http://www.example.com/3.html</link>
-            <category type="d">cate_d</category> 
-        </item> 
-        <item> 
+            <category type="d">cate_d</category>
+        </item>
+        <item>
             <link>http://www.example.com/4.html</link>
-            <category type="e">cate_e</category> 
-            <category domain="f">cate_f</category> 
+            <category type="e">cate_e</category>
+            <category domain="f">cate_f</category>
         </item>
-        <item> 
+        <item>
             <link>http://www.example.com/5.html</link>
-            <category type="g">cate_g</category> 
-            <category>cate_h</category> 
-            <category domain="i">cate_i</category> 
-            <category>cate_j</category> 
+            <category type="g">cate_g</category>
+            <category>cate_h</category>
+            <category domain="i">cate_i</category>
+            <category>cate_j</category>
         </item>
-    </channel> 
-</rss> 
+    </channel>
+</rss>
 EOT
     &test_default( $rss );
     my $rdf = &test_as_rdf( $rss );
@@ -78,6 +78,7 @@ sub test_default {
     my $feed = XML::FeedPP->new( $source );
     ok( $feed, 'TESTING DEFAULT' );
     &test_fetch( $feed );
+    &test_attribute( $feed );
 }
 # ----------------------------------------------------------------
 sub test_update {
@@ -95,6 +96,36 @@ sub test_update {
         is( $cate, 'cate_'.$cnt2, 'update category '.$cnt2 );
         $cnt2 ++;
     }
+}
+# ----------------------------------------------------------------
+sub test_attribute {
+    my $feed = shift;
+
+    my $item0 = $feed->get_item( 0 );
+    $item0->set( 'category@type', 'XXX' );
+    my $type0 = $item0->get( 'category@type' );
+    is( $type0, 'XXX', '0: update type' );
+
+    my $item1 = $feed->get_item( 1 );
+    $item1->set( 'category@domain', 'YYY' );
+    my $doma1 = $item1->get( 'category@domain' );
+    is( $doma1, 'YYY', '1: update domain' );
+
+    my $item2 = $feed->get_item( 2 );
+    my $type2 = $item2->get( 'category@type' );
+    is( $type2, 'd', '2: with attribute / type' );
+
+    my $item3 = $feed->get_item( 3 );
+    my $type3 = $item3->get( 'category@type' );
+    my $doma3 = $item3->get( 'category@domain' );
+    is( $type3, 'e', '3: multiple with attribute / type' );
+    is( $doma3, 'f', '3: multiple with attribute / domain' );
+
+    my $item4 = $feed->get_item( 4 );
+    my @type4 = $item4->get( 'category@type' );
+    is( $type4[0], 'g', '4: mixed / type g' );
+    my @doma4 = $item4->get( 'category@domain' );
+    is( $doma4[2], 'i', '4: mixed / domain i' );
 }
 # ----------------------------------------------------------------
 sub test_fetch {
@@ -117,10 +148,10 @@ sub test_fetch {
 
     my $item3 = $feed->get_item( 3 );
     my $cate3 = $item3->category;
-    ok( ref $cate3, '3: multiple with type / ref' );
-    is( (scalar @$cate3), 2, '3: multiple with type / num' );
-    is( $cate3->[0], 'cate_e', '3: multiple with type / val e' );
-    is( $cate3->[1], 'cate_f', '3: multiple with type / val f' );
+    ok( ref $cate3, '3: multiple with attribute / ref' );
+    is( (scalar @$cate3), 2, '3: multiple with attribute / num' );
+    is( $cate3->[0], 'cate_e', '3: multiple with attribute / val e' );
+    is( $cate3->[1], 'cate_f', '3: multiple with attribute / val f' );
 
     my $item4 = $feed->get_item( 4 );
     my $cate4 = $item4->category;

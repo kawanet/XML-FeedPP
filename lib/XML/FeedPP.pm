@@ -371,7 +371,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.38";
+$VERSION = "0.39";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -2023,7 +2023,7 @@ sub set {
                 # ok
             }
             elsif ( defined $node->{$child} ) {
-                $node->{$child} = { "#text" => $node->{$child} };
+                $node->{$child} = { '#text' => $node->{$child} };
             }
             else {
                 $node->{$child} = {};
@@ -2035,21 +2035,28 @@ sub set {
             $node->{ '-' . $attr } = $val;
         }
         elsif ( defined $attr ) {
+            if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+                $node->{$tagname} = shift @{$node->{$tagname}};
+            }
+            my $hkey = '-' . $attr;
             if ( ref $node->{$tagname} ) {
-                $node->{$tagname}->{ '-' . $attr } = $val;
+                $node->{$tagname}->{$hkey} = $val;
             }
             elsif ( defined $node->{$tagname} ) {
                 $node->{$tagname} = {
-                    "#text"     => $node->{$tagname},
-                    '-' . $attr => $val,
+                    '#text' => $node->{$tagname},
+                    $hkey   => $val,
                 };
             }
             else {
-                $node->{$tagname} = { '-' . $attr => $val, };
+                $node->{$tagname} = { $hkey => $val };
             }
         }
         elsif ( defined $tagname ) {
-            if ( ref $self->{$tagname} ) {
+            if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+                $node->{$tagname} = shift @{$node->{$tagname}};
+            }
+            if ( ref $node->{$tagname} ) {
                 $node->{$tagname}->{'#text'} = $val;
             }
             else {
@@ -2079,17 +2086,26 @@ sub get {
     }
     elsif ( defined $attr ) {                   # node@attribute
         return unless ref $node->{$tagname};
+        my $hkey = '-' . $attr;
         if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
-            my $list = [ map { $_->{'-'.$attr} }
-                         grep { exists $_->{'-'.$attr} }
-                         @{$node->{$tagname}} ];
-            return wantarray ? @$list : shift @$list;
+            my $list = [
+                map { ref $_ && exists $_->{$hkey} ? $_->{$hkey} : undef }
+                @{$node->{$tagname}} ];
+            return @$list if wantarray;
+            return ( grep { defined $_ } @$list )[0];
         }
-        return unless exists $node->{$tagname}->{ '-' . $attr };
-        return $node->{$tagname}->{ '-' . $attr };
+        return unless exists $node->{$tagname}->{$hkey};
+        return $node->{$tagname}->{$hkey};
     }
     else {                                      # node
         return $node->{$tagname} unless ref $node->{$tagname};
+        if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+            my $list = [
+                map { ref $_ ? $_->{'#text'} : $_ }
+                @{$node->{$tagname}} ];
+            return @$list if wantarray;
+            return ( grep { defined $_ } @$list )[0];
+        }
         return $node->{$tagname}->{'#text'};
     }
 }
@@ -2179,7 +2195,7 @@ sub set_attr {
     my $attr = \@_;
     if ( defined $self->{$elem} ) {
         if ( !ref $self->{$elem} ) {
-            $self->{$elem} = { "#text" => $self->{$elem} };
+            $self->{$elem} = { '#text' => $self->{$elem} };
         }
     }
     else {
