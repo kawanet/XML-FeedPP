@@ -283,6 +283,38 @@ See also L</ACCESSOR AND MUTATORS> section below.
 
 This method returns the item's C<link> element.
 
+=head2  $hash = $item->enclosure();
+
+Returns the item enclosure as the hash reference with C<url> (URL), C<type> (media type)
+and optional C<length> (number of bytes) and C<title> (enclosure type) keys.
+Note that C<title> is supported only for Atom 1.0 feeds.
+
+If there are several enclosures, this method returns an array reference.
+
+=head2  $item->enclosure({ url => $url, type => $type, length => $length, title => $title });
+
+Sets the item enclosure.
+
+An array reference can be passed to this function to set several enclosures.
+
+=head2 $item->attached_image({ mime_order => ['image/svg+xml', 'image/png'] });
+
+Returns the image attached to the item.
+
+The optional parameter can contain key C<mime_order> which specifies image mime
+types in the order of preference. The default C<mime_order> is
+C<['image/jpeg', 'image/gif', 'image/png']>.
+
+=head2 $item->attached_image($info, { url => $url, type => $type, length => $length, title => $title, width => $width, height => $height });
+
+Sets image attached to the item. C<url> is the URL of the image, C<type> is its
+MIME type, C<length> (optional) is its length in bytes, C<title> is image title.
+
+Setting attached image currently work only for RDF feeds. You may use C<enclosure()> method
+with other feed types. Also note that in RDF C<type> and C<length> keys don't work.
+
+C<$info> parameter is currently ignored. Pass C<undef> as its value.
+
 =head1  ACCESSOR AND MUTATORS
 
 This module understands only subset of C<rdf:*>, C<dc:*> modules
@@ -365,7 +397,7 @@ use XML::TreePP;
 
 use vars qw(
     $VERSION        $RSS20_VERSION  $ATOM03_VERSION
-    $XMLNS_RDF      $XMLNS_RSS      $XMLNS_DC       $XMLNS_ATOM03
+    $XMLNS_RDF      $XMLNS_RSS      $XMLNS_DC       $XMLNS_ENC      $XMLNS_IMAGE    $XMLNS_ATOM03
     $XMLNS_NOCOPY   $TREEPP_OPTIONS $MIME_TYPES
     $FEED_METHODS   $ITEM_METHODS
     $XMLNS_ATOM10
@@ -379,9 +411,11 @@ $ATOM03_VERSION = '0.3';
 $XMLNS_RDF    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 $XMLNS_RSS    = 'http://purl.org/rss/1.0/';
 $XMLNS_DC     = 'http://purl.org/dc/elements/1.1/';
+$XMLNS_ENC    = 'http://purl.oclc.org/net/rss_2.0/enc#';
+$XMLNS_IMAGE  = 'http://purl.org/rss/1.0/modules/image/';
 $XMLNS_ATOM03 = 'http://purl.org/atom/ns#';
 $XMLNS_ATOM10 = 'http://www.w3.org/2005/Atom';
-$XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:atom )];
+$XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:enc xmlns:image xmlns:atom )];
 
 $TREEPP_OPTIONS = {
     force_array => [qw( item rdf:li entry )],
@@ -422,6 +456,7 @@ $ITEM_METHODS = [qw(
     guid
     pubDate
     image
+    enclosure
     set
 )];
 
@@ -611,6 +646,9 @@ sub add_clone_item {
         my $pubDate = $srcitem->pubDate();
         $dstitem->pubDate($pubDate) if defined $pubDate;
 
+        my $enclosure = $srcitem->enclosure();
+        $dstitem->enclosure($enclosure) if defined $enclosure;
+
         $self->merge_module_nodes( $dstitem, $srcitem );
     }
 
@@ -622,7 +660,7 @@ sub merge_module_nodes {
     my $item1 = shift;
     my $item2 = shift;
     foreach my $key ( grep { /:/ } keys %$item2 ) {
-        next if ( $key =~ /^-?(dc|rdf|xmlns):/ );
+        next if ( $key =~ /^-?(dc|enc|image|rdf|xmlns):/ );
 
         # deep copy would be better
         $item1->{$key} = $item2->{$key};
@@ -769,6 +807,19 @@ sub elements {
             $self->$key( $val );
         } else {
             $self->set( $key, $val );
+        }
+    }
+}
+
+sub attached_image {
+    my ($self, $info) = @_;
+    my $order = ($info && $info->{mime_order}) || ['image/jpeg', 'image/gif', 'image/png'];
+    my $enc = $self->enclosure;
+    return unless $enc;
+    $enc = [ $enc ] if ref $enc ne 'ARRAY';
+    for my $mime (@$order) {
+        for my $e (@$enc) {
+            return $e if $e->{type} eq $mime;
         }
     }
 }
@@ -1054,6 +1105,27 @@ sub image {
     undef;
 }
 
+sub enclosure {
+    my $self = shift;
+    my $val  = shift;
+    if ( defined $val ) {
+        $self->{enclosure} ||= {};
+        my $enclosure = $self->{enclosure};
+        $enclosure->{'-url'}    = $val->{url};
+        $enclosure->{'-type'}   = $val->{type} if defined $val->{type};
+        $enclosure->{'-length'} = $val->{length} if defined $val->{length};
+    }
+    elsif ( exists $self->{enclosure} ) {
+        my $enclosure = $self->{enclosure};
+        $val = {};
+        foreach my $key (qw( url type length )) {
+            $val->{$key} = $enclosure->{"-$key"} if exists $enclosure->{"-$key"};
+        }
+        return wantarray ? ($val,) : $val;
+    }
+    undef;
+}
+
 # ----------------------------------------------------------------
 package XML::FeedPP::RDF;
 use strict;
@@ -1084,9 +1156,11 @@ sub init_feed {
     if ( ! UNIVERSAL::isa( $self->{'rdf:RDF'}, 'HASH' ) ) {
         Carp::croak "Invalid RDF format: $self->{'rdf:RDF'}";
     }
-    $self->xmlns( 'xmlns'     => $XML::FeedPP::XMLNS_RSS );
-    $self->xmlns( 'xmlns:rdf' => $XML::FeedPP::XMLNS_RDF );
-    $self->xmlns( 'xmlns:dc'  => $XML::FeedPP::XMLNS_DC );
+    $self->xmlns( 'xmlns'       => $XML::FeedPP::XMLNS_RSS   );
+    $self->xmlns( 'xmlns:rdf'   => $XML::FeedPP::XMLNS_RDF   );
+    $self->xmlns( 'xmlns:dc'    => $XML::FeedPP::XMLNS_DC    );
+    $self->xmlns( 'xmlns:enc'   => $XML::FeedPP::XMLNS_ENC   );
+    $self->xmlns( 'xmlns:image' => $XML::FeedPP::XMLNS_IMAGE );
 
     $self->{'rdf:RDF'}->{channel} ||= XML::FeedPP::Element->new();
     XML::FeedPP::Element->ref_bless( $self->{'rdf:RDF'}->{channel} );
@@ -1353,6 +1427,65 @@ sub get_pubDate_native {
 }
 
 *get_pubDate_w3cdtf = \&get_pubDate_native;
+
+sub enclosure {
+    my $self = shift;
+    my $val  = shift;
+    if ( defined $val ) {
+        $val = [$val] if ref $val ne 'ARRAY';
+        my @array;
+        foreach my $h ( @$val ) {
+            my $tag = {};
+            $tag->{'-rdf:resource'} = $h->{url};
+            $tag->{'-enc:type'}     = $h->{type} if defined $h->{type};
+            $tag->{'-enc:length'}   = $h->{length} if defined $h->{length};
+            push @array, $tag;
+        }
+        if ( !@array ) {
+            delete $self->{'enc:enclosure'};
+        }
+        else {
+            $self->{'enc:enclosure'} = @array == 1 ? $array[0] : \@array;
+        }
+    }
+    elsif ( exists $self->{'enc:enclosure'} ) {
+        my $enclosure = $self->{'enc:enclosure'};
+        $enclosure = [$enclosure] if ref $enclosure eq 'HASH';
+        my @array;
+        foreach my $elt ( @$enclosure ) {
+            my %h;
+            $h{url}    = $elt->{'-rdf:resource'};
+            $h{type}   = $elt->{'-enc:type'} if defined $elt->{'-enc:type'};
+            $h{length} = $elt->{'-enc:length'} if defined $elt->{'-enc:length'};
+            push @array, \%h;
+        }
+        return wantarray ? @array : shift @array;
+    }
+    undef;
+}
+
+sub attached_image {
+    my ($self, $info, $value) = @_;
+    if ( $value ) {
+        my $tag = {};
+        $tag->{'-rdf:about'}   = $value->{url};
+        $tag->{'dc:title'}     = $value->{title} if defined $value->{title};
+        $tag->{'image:width'}  = $value->{width} if defined $value->{width};
+        $tag->{'image:height'} = $value->{height} if defined $value->{height};
+        $self->{'image:item'} = $tag;
+    } else {
+        my $img = $self->{'image:item'};
+        if ( $img ) {
+            return {
+                url    => $img->{'-rdf:about'},
+                title  => $img->{'dc:title'},
+                width  => $img->{'image:width'},
+                height => $img->{'image:height'},
+            };
+        }
+        return $self->XML::FeedPP::Item::attached_image($info);
+    }
+}
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Common;
@@ -1888,6 +2021,7 @@ sub title {
 }
 
 sub category { undef; }    # this element is NOT supported for Atom 0.3
+sub enclosure { undef; }   # this element is NOT supported for Atom 0.3
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom10::Entry;
@@ -1984,6 +2118,47 @@ sub category {
 #       return wantarray ? @$term : shift @$term;
         return ( scalar @$term > 1 ) ? $term : shift @$term;
     }
+}
+
+sub enclosure {
+    my $self = shift;
+    my $val  = shift;
+    if ( defined $val ) {
+        $val = [$val] if ref $val ne 'ARRAY';
+        my $xml = $self->{link};
+        $xml = [ $xml ] if ref $xml ne 'ARRAY';
+        $xml = [ grep { ! exists $_->{'-rel'} || $_->{'-rel'} ne 'enclosure' } @$xml ];
+        foreach my $h ( @$val ) {
+            my $tag = { '-rel' => 'enclosure' };
+            $tag->{'-href'}   = $h->{url};
+            $tag->{'-type'}   = $h->{type} if defined $h->{type};
+            $tag->{'-length'} = $h->{length} if defined $h->{length};
+            $tag->{'-title'}  = $h->{title} if defined $h->{title};
+            push @$xml, $tag;
+        }
+        if ( !@$xml ) {
+            delete $self->{'link'};
+        }
+        else {
+            $self->{'link'} = @$xml == 1 ? $xml->[0] : \@$xml;
+        }
+    }
+    elsif ( exists $self->{'link'} ) {
+        my $link = $self->{'link'};
+        $link = [ $link ] if ref $link ne 'ARRAY';
+        $link = [ grep { exists $_->{'-rel'} && $_->{'-rel'} eq 'enclosure' } @$link ];
+        my @array;
+        foreach my $elt ( @$link ) {
+            my %h;
+            $h{url}    = $elt->{'-href'};
+            $h{type}   = $elt->{'-type'} if defined $elt->{'-type'};
+            $h{length} = $elt->{'-length'} if defined $elt->{'-length'};
+            $h{title}  = $elt->{'-title'} if defined $elt->{'-title'};
+            push @array, \%h;
+        }
+        return wantarray ? @array : shift @array;
+    }
+    undef;
 }
 
 # ----------------------------------------------------------------

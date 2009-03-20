@@ -23,7 +23,7 @@
     my $feed2 = XML::FeedPP::RDF->new();
     $feed2->title( $ftitle );
 	my $xmlns2 = $feed2->xmlns();
-	is( join(" ",sort $feed2->xmlns()), "xmlns xmlns:dc xmlns:rdf", "RDF xmlns=".$xmlns2 );
+	is( join(" ",sort $feed2->xmlns()), "xmlns xmlns:dc xmlns:enc xmlns:image xmlns:rdf", "RDF xmlns=".$xmlns2 );
 	$feed2->xmlns( 'xmlns:taxo' => $xmlns_taxo );
 	is( $xmlns_taxo, $feed2->xmlns('xmlns:taxo'), 'RDF xmlns:taxo' );
 	ok( $xmlns2+1 == scalar $feed2->xmlns(), 'RDF +1' );
