@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------
     use strict;
-    use Test::More tests => 25;
+    use Test::More tests => 49;
     BEGIN { use_ok('XML::FeedPP') };
 # ----------------------------------------------------------------
 {
@@ -36,7 +36,14 @@ EOT
 </feed>
 EOT
 
+    my $bom = "\xEF\xBB\xBF";
     my $xml = '<?xml version="1.0" encoding="UTF-8" ?>';
+
+    # without xml decl
+    &test_main( 'NoDecl RSS 2.0',  $rss );
+    &test_main( 'NoDecl RSS 1.0',  $rdf );
+    &test_main( 'NoDecl Atom 0.3', $atom03 );
+    &test_main( 'NoDecl Atom 1.0', $atom10 );
 
     # with xml decl
     &test_main( 'XMLDecl RSS 2.0',  $xml.$rss );
@@ -44,11 +51,17 @@ EOT
     &test_main( 'XMLDecl Atom 0.3', $xml.$atom03 );
     &test_main( 'XMLDecl Atom 1.0', $xml.$atom10 );
 
-    # without xml decl
-    &test_main( 'No XMLDecl RSS 2.0',  $rss );
-    &test_main( 'No XMLDecl RSS 1.0',  $rdf );
-    &test_main( 'No XMLDecl Atom 0.3', $atom03 );
-    &test_main( 'No XMLDecl Atom 1.0', $atom10 );
+    # with bom but no xml decl
+    &test_main( 'BOM RSS 2.0',  $bom.$rss );
+    &test_main( 'BOM RSS 1.0',  $bom.$rdf );
+    &test_main( 'BOM Atom 0.3', $bom.$atom03 );
+    &test_main( 'BOM Atom 1.0', $bom.$atom10 );
+    
+    # with bom and xml decl
+    &test_main( 'BOM XMLDecl RSS 2.0',  $bom.$xml.$rss );
+    &test_main( 'BOM XMLDecl RSS 1.0',  $bom.$xml.$rdf );
+    &test_main( 'BOM XMLDecl Atom 0.3', $bom.$xml.$atom03 );
+    &test_main( 'BOM XMLDecl Atom 1.0', $bom.$xml.$atom10 );
 }
 # ----------------------------------------------------------------
 sub test_main {

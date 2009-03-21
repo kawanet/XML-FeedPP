@@ -376,15 +376,19 @@ to download feeds from remote web servers.
 C<Jcode.pm> is required to convert Japanese encodings on Perl 5.005
 and 5.6.1, but is NOT required on Perl 5.8.x and later.
 
-=head1 AUTHOR
+=head1 REPOSITORY
 
-Yusuke Kawasaki, http://www.kawa.net/
+    http://xml-treepp.googlecode.com/svn/trunk/XML-FeedPP/
 
-=head1 COPYRIGHT AND LICENSE
+=head1 AUTHORS
 
-Copyright (c) 2006-2009 Yusuke Kawasaki. All rights reserved.
-This program is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself.
+    Yusuke Kawasaki http://www.kawa.net/
+    Victor Porton http://portonvictor.org/
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
 
 =cut
 
@@ -513,7 +517,7 @@ sub load {
     if ( $source =~ m#^https?://#s ) {
         $tree = $tpp->parsehttp( GET => $source );
     }
-    elsif ( $source =~ m#(^\s*)(<(\?xml|!DOCTYPE|rdf:RDF|rss|feed)\W)#i ) {
+    elsif ( $source =~ m#(?:\s*\xEF\xBB\xBF)?\s*(<(\?xml|!DOCTYPE|rdf:RDF|rss|feed)\W)#is ) {
         $tree = $tpp->parse($source);
     }
     elsif ( $source !~ /[\r\n]/ && -f $source ) {

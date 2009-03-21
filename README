@@ -228,6 +228,38 @@ METHODS FOR ITEM
   $link = $item->link();
     This method returns the item's "link" element.
 
+  $hash = $item->enclosure();
+    Returns the item enclosure as the hash reference with "url" (URL),
+    "type" (media type) and optional "length" (number of bytes) and "title"
+    (enclosure type) keys. Note that "title" is supported only for Atom 1.0
+    feeds.
+
+    If there are several enclosures, this method returns an array reference.
+
+  $item->enclosure({ url => $url, type => $type, length => $length, title => $title });
+    Sets the item enclosure.
+
+    An array reference can be passed to this function to set several
+    enclosures.
+
+  $item->attached_image({ mime_order => ['image/svg+xml', 'image/png'] });
+    Returns the image attached to the item.
+
+    The optional parameter can contain key "mime_order" which specifies
+    image mime types in the order of preference. The default "mime_order" is
+    "['image/jpeg', 'image/gif', 'image/png']".
+
+  $item->attached_image($info, { url => $url, type => $type, length => $length, title => $title, width => $width, height => $height });
+    Sets image attached to the item. "url" is the URL of the image, "type"
+    is its MIME type, "length" (optional) is its length in bytes, "title" is
+    image title.
+
+    Setting attached image currently work only for RDF feeds. You may use
+    "enclosure()" method with other feed types. Also note that in RDF "type"
+    and "length" keys don't work.
+
+    $info parameter is currently ignored. Pass "undef" as its value.
+
 ACCESSOR AND MUTATORS
     This module understands only subset of "rdf:*", "dc:*" modules and
     RSS/RDF/Atom's default namespaces by itself. There are NO native methods
@@ -278,11 +310,14 @@ MODULE DEPENDENCIES
     Japanese encodings on Perl 5.005 and 5.6.1, but is NOT required on Perl
     5.8.x and later.
 
-AUTHOR
-    Yusuke Kawasaki, http://www.kawa.net/
+REPOSITORY
+        http://xml-treepp.googlecode.com/svn/trunk/XML-FeedPP/
 
-COPYRIGHT AND LICENSE
-    Copyright (c) 2006-2009 Yusuke Kawasaki. All rights reserved. This
-    program is free software; you can redistribute it and/or modify it under
-    the same terms as Perl itself.
+AUTHORS
+        Yusuke Kawasaki http://www.kawa.net/
+        Victor Porton http://portonvictor.org/
+
+LICENSE
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
 

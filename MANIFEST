@@ -40,3 +40,6 @@ t/32_two_titles.t
 t/33_guid.t
 t/34_category_type.t
 t/35_no_xml_decl.t
+t/36_get_multiple.t
+t/37_enclosure.t
+t/38_item_image.t

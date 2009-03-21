@@ -1,8 +1,15 @@
 # XML::FeedPP Changes
 
+2009/03/XX (0.39)
+    * fixed #44082: parse method refuses feeds with UTF-8 BOM
+      http://rt.cpan.org/Public/Bug/Display.html?id=44082
+      (thanks to haarg)
+    * supports to get attributes in multiple elements determinably.
+      See 36_get_multiple.t
+
 2009/03/12 (0.38)
     * fixed #36270: supports no XMLDecl on load() method
-      https://rt.cpan.org/Ticket/Display.html?id=36270
+      http://rt.cpan.org/Ticket/Display.html?id=36270
       (thanks to hirsch)
     * supports category element which has type="" or domain="" attribute
       ex. http://thesteampunkhome.blogspot.com/feeds/posts/default
