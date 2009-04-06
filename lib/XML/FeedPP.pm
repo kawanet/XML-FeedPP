@@ -58,7 +58,7 @@ halted.
 The URL on the remote web server is also available as the first argument.
 L<LWP::UserAgent> is required to download it.
 
-=head2  $feed = XML::FeedPP->new( "<?xml?><rss version=..." );
+=head2  $feed = XML::FeedPP->new( '<rss version="2.0">...' );
 
 The XML source code is also available as the first argument.
 
@@ -72,7 +72,7 @@ from choice of C<'file'>, C<'url'> or C<'string'>.
 This makes utf8 flag on for every feed elements.
 Perl 5.8.1 or later is required to use this.
 
-Note that any other options for L<XML::TreePP> constructor are also 
+Note that any other options for C<XML::TreePP> constructor are also 
 allowed like this. See more detail on L<XML::TreePP>.
 
 =head2  $feed = XML::FeedPP::RSS->new( $source );
@@ -124,9 +124,9 @@ the Jcode module are available: 'UTF-8', 'Shift_JIS', 'EUC-JP' and
 =head2  $string = $feed->to_string( indent => 4 );
 
 This makes the output more human readable by indenting appropriately.
-This doesnÅft strictly follow the XML specification but does looks nice.
+This does not strictly follow the XML specification but does looks nice.
 
-Note that any other options for L<XML::TreePP> constructor are also 
+Note that any other options for C<XML::TreePP> constructor are also 
 allowed like this. See more detail on L<XML::TreePP>.
 
 =head2  $feed->to_file( $filename, $encoding );
