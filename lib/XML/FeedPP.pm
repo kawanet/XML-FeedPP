@@ -62,6 +62,19 @@ L<LWP::UserAgent> is required to download it.
 
 The XML source code is also available as the first argument.
 
+=head2  $feed = XML::FeedPP->new( $source, -type => $type );
+
+The C<-type> argument allows you to specify type of $source 
+from choice of C<'file'>, C<'url'> or C<'string'>.
+
+=head2  $feed = XML::FeedPP->new( $source, utf8_flag => 1 );
+
+This makes utf8 flag on for every feed elements.
+Perl 5.8.1 or later is required to use this.
+
+Note that any other options for L<XML::TreePP> constructor are also 
+allowed like this. See more detail on L<XML::TreePP>.
+
 =head2  $feed = XML::FeedPP::RSS->new( $source );
 
 This constructor method creates an instance for an RSS 2.0 feed.
@@ -107,6 +120,14 @@ $encoding is optional, and the default encoding is 'UTF-8'.  On Perl
 available.  On Perl 5.005 and 5.6.1, only four encodings supported by
 the Jcode module are available: 'UTF-8', 'Shift_JIS', 'EUC-JP' and
 'ISO-2022-JP'.  'UTF-8' is recommended for overall compatibility.
+
+=head2  $string = $feed->to_string( indent => 4 );
+
+This makes the output more human readable by indenting appropriately.
+This doesnÅft strictly follow the XML specification but does looks nice.
+
+Note that any other options for L<XML::TreePP> constructor are also 
+allowed like this. See more detail on L<XML::TreePP>.
 
 =head2  $feed->to_file( $filename, $encoding );
 
@@ -283,38 +304,6 @@ See also L</ACCESSOR AND MUTATORS> section below.
 
 This method returns the item's C<link> element.
 
-=head2  $hash = $item->enclosure();
-
-Returns the item enclosure as the hash reference with C<url> (URL), C<type> (media type)
-and optional C<length> (number of bytes) and C<title> (enclosure type) keys.
-Note that C<title> is supported only for Atom 1.0 feeds.
-
-If there are several enclosures, this method returns an array reference.
-
-=head2  $item->enclosure({ url => $url, type => $type, length => $length, title => $title });
-
-Sets the item enclosure.
-
-An array reference can be passed to this function to set several enclosures.
-
-=head2 $item->attached_image({ mime_order => ['image/svg+xml', 'image/png'] });
-
-Returns the image attached to the item.
-
-The optional parameter can contain key C<mime_order> which specifies image mime
-types in the order of preference. The default C<mime_order> is
-C<['image/jpeg', 'image/gif', 'image/png']>.
-
-=head2 $item->attached_image($info, { url => $url, type => $type, length => $length, title => $title, width => $width, height => $height });
-
-Sets image attached to the item. C<url> is the URL of the image, C<type> is its
-MIME type, C<length> (optional) is its length in bytes, C<title> is image title.
-
-Setting attached image currently work only for RDF feeds. You may use C<enclosure()> method
-with other feed types. Also note that in RDF C<type> and C<length> keys don't work.
-
-C<$info> parameter is currently ignored. Pass C<undef> as its value.
-
 =head1  ACCESSOR AND MUTATORS
 
 This module understands only subset of C<rdf:*>, C<dc:*> modules
@@ -376,19 +365,15 @@ to download feeds from remote web servers.
 C<Jcode.pm> is required to convert Japanese encodings on Perl 5.005
 and 5.6.1, but is NOT required on Perl 5.8.x and later.
 
-=head1 REPOSITORY
+=head1 AUTHOR
 
-    http://xml-treepp.googlecode.com/svn/trunk/XML-FeedPP/
+Yusuke Kawasaki, http://www.kawa.net/
 
-=head1 AUTHORS
+=head1 COPYRIGHT AND LICENSE
 
-    Yusuke Kawasaki http://www.kawa.net/
-    Victor Porton http://portonvictor.org/
-
-=head1 LICENSE
-
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+Copyright (c) 2006-2009 Yusuke Kawasaki. All rights reserved.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut
 
@@ -401,13 +386,13 @@ use XML::TreePP;
 
 use vars qw(
     $VERSION        $RSS20_VERSION  $ATOM03_VERSION
-    $XMLNS_RDF      $XMLNS_RSS      $XMLNS_DC       $XMLNS_ENC      $XMLNS_IMAGE    $XMLNS_ATOM03
+    $XMLNS_RDF      $XMLNS_RSS      $XMLNS_DC       $XMLNS_ATOM03
     $XMLNS_NOCOPY   $TREEPP_OPTIONS $MIME_TYPES
     $FEED_METHODS   $ITEM_METHODS
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.39";
+$VERSION = "0.40";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -415,11 +400,9 @@ $ATOM03_VERSION = '0.3';
 $XMLNS_RDF    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 $XMLNS_RSS    = 'http://purl.org/rss/1.0/';
 $XMLNS_DC     = 'http://purl.org/dc/elements/1.1/';
-$XMLNS_ENC    = 'http://purl.oclc.org/net/rss_2.0/enc#';
-$XMLNS_IMAGE  = 'http://purl.org/rss/1.0/modules/image/';
 $XMLNS_ATOM03 = 'http://purl.org/atom/ns#';
 $XMLNS_ATOM10 = 'http://www.w3.org/2005/Atom';
-$XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:enc xmlns:image xmlns:atom )];
+$XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:atom )];
 
 $TREEPP_OPTIONS = {
     force_array => [qw( item rdf:li entry )],
@@ -460,7 +443,6 @@ $ITEM_METHODS = [qw(
     guid
     pubDate
     image
-    enclosure
     set
 )];
 
@@ -495,6 +477,8 @@ sub new {
         my $root = join( " ", sort keys %$self );
         Carp::croak "Invalid feed format: $root";
     }
+
+    $self->validate_feed($source);
     $self->init_feed();
     $self->elements(@$init) if ref $init;
     $self;
@@ -510,38 +494,64 @@ sub feed_bless {
 sub load {
     my $self   = shift;
     my $source = shift;
+    my $args   = { @_ };
+    my $method = $args->{'-type'};
     Carp::croak "No feed source" unless defined $source;
 
+    if ( ! $method ) {
+        if ( $source =~ m#^https?://#s ) {
+            $method = 'url';
+        }
+        elsif ( $source =~ m#(?:\s*\xEF\xBB\xBF)?\s*
+                             (<(\?xml|!DOCTYPE|rdf:RDF|rss|feed)\W)#xis ) {
+            $method = 'string';
+        }
+        elsif ( $source !~ /[\r\n]/ && -f $source ) {
+            $method = 'file';
+        }
+        else {
+            Carp::croak "Invalid feed source: $source";
+        }
+    }
+
+    my $opts = { map { $_ => $args->{$_} } grep { ! /^-/ } keys %$args };
+    my $tpp = XML::TreePP->new(%$TREEPP_OPTIONS, %$opts);
+
     my $tree;
-    my $tpp = XML::TreePP->new(%$TREEPP_OPTIONS, @_);
-    if ( $source =~ m#^https?://#s ) {
+    if ( $method eq 'url' ) {
         $tree = $tpp->parsehttp( GET => $source );
     }
-    elsif ( $source =~ m#(?:\s*\xEF\xBB\xBF)?\s*(<(\?xml|!DOCTYPE|rdf:RDF|rss|feed)\W)#is ) {
+    elsif ( $method eq 'string' ) {
         $tree = $tpp->parse($source);
     }
-    elsif ( $source !~ /[\r\n]/ && -f $source ) {
+    elsif ( $method eq 'file' ) {
         $tree = $tpp->parsefile($source);
     }
-    Carp::croak "Invalid feed source: $source" unless ref $tree;
+    else {
+        Carp::croak "Invalid load type: $method";
+    }
+
+    Carp::croak "Loading failed: $source" unless ref $tree;
     %$self = %$tree;    # override myself
     $self;
 }
 
 sub to_string {
-    my $self   = shift;
-    my $encode = shift;
-    my $opt = { output_encoding => $encode, @_ };
-    my $tpp = XML::TreePP->new( %$TREEPP_OPTIONS, %$opt );
+    my $self = shift;
+    my( $args, $encode, @rest ) = XML::FeedPP::Util::param_even_odd(@_);
+    $args ||= \@rest;
+    my @opts = ( output_encoding => $encode ) if $encode;
+    my $tpp = XML::TreePP->new( %$TREEPP_OPTIONS, @opts, @$args );
     $tpp->write( $self, $encode );
 }
 
 sub to_file {
-    my $self   = shift;
-    my $file   = shift;
-    my $encode = shift;
-    my $opt = { output_encoding => $encode, @_ };
-    my $tpp = XML::TreePP->new( %$TREEPP_OPTIONS, %$opt );
+    my $self = shift;
+    my $file = shift;
+    my( $args, $encode, @rest ) = XML::FeedPP::Util::param_even_odd(@_);
+    $args ||= \@rest;
+    my @opts = ( output_encoding => $encode ) if $encode;
+    my $tpp = XML::TreePP->new( %$TREEPP_OPTIONS, @opts, @$args );
     $tpp->writefile( $file, $self, $encode );
 }
 
@@ -650,9 +660,6 @@ sub add_clone_item {
         my $pubDate = $srcitem->pubDate();
         $dstitem->pubDate($pubDate) if defined $pubDate;
 
-        my $enclosure = $srcitem->enclosure();
-        $dstitem->enclosure($enclosure) if defined $enclosure;
-
         $self->merge_module_nodes( $dstitem, $srcitem );
     }
 
@@ -664,7 +671,7 @@ sub merge_module_nodes {
     my $item1 = shift;
     my $item2 = shift;
     foreach my $key ( grep { /:/ } keys %$item2 ) {
-        next if ( $key =~ /^-?(dc|enc|image|rdf|xmlns):/ );
+        next if ( $key =~ /^-?(dc|rdf|xmlns):/ );
 
         # deep copy would be better
         $item1->{$key} = $item2->{$key};
@@ -815,19 +822,6 @@ sub elements {
     }
 }
 
-sub attached_image {
-    my ($self, $info) = @_;
-    my $order = ($info && $info->{mime_order}) || ['image/jpeg', 'image/gif', 'image/png'];
-    my $enc = $self->enclosure;
-    return unless $enc;
-    $enc = [ $enc ] if ref $enc ne 'ARRAY';
-    for my $mime (@$order) {
-        for my $e (@$enc) {
-            return $e if $e->{type} eq $mime;
-        }
-    }
-}
-
 # ----------------------------------------------------------------
 package XML::FeedPP::RSS;
 use strict;
@@ -842,13 +836,19 @@ sub new {
     bless $self, $package;
     if ( defined $source ) {
         $self->load($source, @rest);
-        if ( !ref $self || !ref $self->{rss} ) {
-            Carp::croak "Invalid RSS format: $source";
-        }
+        $self->validate_feed($source);
     }
     $self->init_feed();
     $self->elements(@$init) if ref $init;
     $self;
+}
+
+sub validate_feed {
+    my $self   = shift;
+    my $source = shift || $self;
+    if ( !ref $self || !ref $self->{rss} ) {
+        Carp::croak "Invalid RSS format: $source";
+    }
 }
 
 sub init_feed {
@@ -1109,27 +1109,6 @@ sub image {
     undef;
 }
 
-sub enclosure {
-    my $self = shift;
-    my $val  = shift;
-    if ( defined $val ) {
-        $self->{enclosure} ||= {};
-        my $enclosure = $self->{enclosure};
-        $enclosure->{'-url'}    = $val->{url};
-        $enclosure->{'-type'}   = $val->{type} if defined $val->{type};
-        $enclosure->{'-length'} = $val->{length} if defined $val->{length};
-    }
-    elsif ( exists $self->{enclosure} ) {
-        my $enclosure = $self->{enclosure};
-        $val = {};
-        foreach my $key (qw( url type length )) {
-            $val->{$key} = $enclosure->{"-$key"} if exists $enclosure->{"-$key"};
-        }
-        return wantarray ? ($val,) : $val;
-    }
-    undef;
-}
-
 # ----------------------------------------------------------------
 package XML::FeedPP::RDF;
 use strict;
@@ -1144,15 +1123,20 @@ sub new {
     bless $self, $package;
     if ( defined $source ) {
         $self->load($source, @rest);
-        if ( !ref $self || !ref $self->{'rdf:RDF'} ) {
-            Carp::croak "Invalid RDF format: $source";
-        }
+        $self->validate_feed($source);
     }
     $self->init_feed();
     $self->elements(@$init) if ref $init;
     $self;
 }
 
+sub validate_feed {
+    my $self   = shift;
+    my $source = shift || $self;
+    if ( !ref $self || !ref $self->{'rdf:RDF'} ) {
+        Carp::croak "Invalid RDF format: $source";
+    }
+}
 sub init_feed {
     my $self = shift or return;
 
@@ -1160,11 +1144,9 @@ sub init_feed {
     if ( ! UNIVERSAL::isa( $self->{'rdf:RDF'}, 'HASH' ) ) {
         Carp::croak "Invalid RDF format: $self->{'rdf:RDF'}";
     }
-    $self->xmlns( 'xmlns'       => $XML::FeedPP::XMLNS_RSS   );
-    $self->xmlns( 'xmlns:rdf'   => $XML::FeedPP::XMLNS_RDF   );
-    $self->xmlns( 'xmlns:dc'    => $XML::FeedPP::XMLNS_DC    );
-    $self->xmlns( 'xmlns:enc'   => $XML::FeedPP::XMLNS_ENC   );
-    $self->xmlns( 'xmlns:image' => $XML::FeedPP::XMLNS_IMAGE );
+    $self->xmlns( 'xmlns'     => $XML::FeedPP::XMLNS_RSS );
+    $self->xmlns( 'xmlns:rdf' => $XML::FeedPP::XMLNS_RDF );
+    $self->xmlns( 'xmlns:dc'  => $XML::FeedPP::XMLNS_DC );
 
     $self->{'rdf:RDF'}->{channel} ||= XML::FeedPP::Element->new();
     XML::FeedPP::Element->ref_bless( $self->{'rdf:RDF'}->{channel} );
@@ -1432,65 +1414,6 @@ sub get_pubDate_native {
 
 *get_pubDate_w3cdtf = \&get_pubDate_native;
 
-sub enclosure {
-    my $self = shift;
-    my $val  = shift;
-    if ( defined $val ) {
-        $val = [$val] if ref $val ne 'ARRAY';
-        my @array;
-        foreach my $h ( @$val ) {
-            my $tag = {};
-            $tag->{'-rdf:resource'} = $h->{url};
-            $tag->{'-enc:type'}     = $h->{type} if defined $h->{type};
-            $tag->{'-enc:length'}   = $h->{length} if defined $h->{length};
-            push @array, $tag;
-        }
-        if ( !@array ) {
-            delete $self->{'enc:enclosure'};
-        }
-        else {
-            $self->{'enc:enclosure'} = @array == 1 ? $array[0] : \@array;
-        }
-    }
-    elsif ( exists $self->{'enc:enclosure'} ) {
-        my $enclosure = $self->{'enc:enclosure'};
-        $enclosure = [$enclosure] if ref $enclosure eq 'HASH';
-        my @array;
-        foreach my $elt ( @$enclosure ) {
-            my %h;
-            $h{url}    = $elt->{'-rdf:resource'};
-            $h{type}   = $elt->{'-enc:type'} if defined $elt->{'-enc:type'};
-            $h{length} = $elt->{'-enc:length'} if defined $elt->{'-enc:length'};
-            push @array, \%h;
-        }
-        return wantarray ? @array : shift @array;
-    }
-    undef;
-}
-
-sub attached_image {
-    my ($self, $info, $value) = @_;
-    if ( $value ) {
-        my $tag = {};
-        $tag->{'-rdf:about'}   = $value->{url};
-        $tag->{'dc:title'}     = $value->{title} if defined $value->{title};
-        $tag->{'image:width'}  = $value->{width} if defined $value->{width};
-        $tag->{'image:height'} = $value->{height} if defined $value->{height};
-        $self->{'image:item'} = $tag;
-    } else {
-        my $img = $self->{'image:item'};
-        if ( $img ) {
-            return {
-                url    => $img->{'-rdf:about'},
-                title  => $img->{'dc:title'},
-                width  => $img->{'image:width'},
-                height => $img->{'image:height'},
-            };
-        }
-        return $self->XML::FeedPP::Item::attached_image($info);
-    }
-}
-
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Common;
 use strict;
@@ -1505,13 +1428,19 @@ sub new {
     bless $self, $package;
     if ( defined $source ) {
         $self->load($source, @rest);
-        if ( !ref $self || !ref $self->{feed} ) {
-            Carp::croak "Invalid Atom format: $source";
-        }
+        $self->validate_feed($source);
     }
     $self->init_feed();
     $self->elements(@$init) if ref $init;
     $self;
+}
+
+sub validate_feed {
+    my $self   = shift;
+    my $source = shift || $self;
+    if ( !ref $self || !ref $self->{feed} ) {
+        Carp::croak "Invalid Atom format: $source";
+    }
 }
 
 sub merge_native_channel {
@@ -2025,7 +1954,6 @@ sub title {
 }
 
 sub category { undef; }    # this element is NOT supported for Atom 0.3
-sub enclosure { undef; }   # this element is NOT supported for Atom 0.3
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom10::Entry;
@@ -2124,47 +2052,6 @@ sub category {
     }
 }
 
-sub enclosure {
-    my $self = shift;
-    my $val  = shift;
-    if ( defined $val ) {
-        $val = [$val] if ref $val ne 'ARRAY';
-        my $xml = $self->{link};
-        $xml = [ $xml ] if ref $xml ne 'ARRAY';
-        $xml = [ grep { ! exists $_->{'-rel'} || $_->{'-rel'} ne 'enclosure' } @$xml ];
-        foreach my $h ( @$val ) {
-            my $tag = { '-rel' => 'enclosure' };
-            $tag->{'-href'}   = $h->{url};
-            $tag->{'-type'}   = $h->{type} if defined $h->{type};
-            $tag->{'-length'} = $h->{length} if defined $h->{length};
-            $tag->{'-title'}  = $h->{title} if defined $h->{title};
-            push @$xml, $tag;
-        }
-        if ( !@$xml ) {
-            delete $self->{'link'};
-        }
-        else {
-            $self->{'link'} = @$xml == 1 ? $xml->[0] : \@$xml;
-        }
-    }
-    elsif ( exists $self->{'link'} ) {
-        my $link = $self->{'link'};
-        $link = [ $link ] if ref $link ne 'ARRAY';
-        $link = [ grep { exists $_->{'-rel'} && $_->{'-rel'} eq 'enclosure' } @$link ];
-        my @array;
-        foreach my $elt ( @$link ) {
-            my %h;
-            $h{url}    = $elt->{'-href'};
-            $h{type}   = $elt->{'-type'} if defined $elt->{'-type'};
-            $h{length} = $elt->{'-length'} if defined $elt->{'-length'};
-            $h{title}  = $elt->{'-title'} if defined $elt->{'-title'};
-            push @array, \%h;
-        }
-        return wantarray ? @array : shift @array;
-    }
-    undef;
-}
-
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Entry;
 use strict;
@@ -2214,7 +2101,8 @@ sub set {
             $node->{ '-' . $attr } = $val;
         }
         elsif ( defined $attr ) {
-            if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+            if ( ref $node->{$tagname} && 
+                 UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
                 $node->{$tagname} = shift @{$node->{$tagname}};
             }
             my $hkey = '-' . $attr;
@@ -2232,7 +2120,8 @@ sub set {
             }
         }
         elsif ( defined $tagname ) {
-            if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+            if ( ref $node->{$tagname} && 
+                 UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
                 $node->{$tagname} = shift @{$node->{$tagname}};
             }
             if ( ref $node->{$tagname} ) {

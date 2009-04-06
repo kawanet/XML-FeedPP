@@ -41,5 +41,7 @@ t/33_guid.t
 t/34_category_type.t
 t/35_no_xml_decl.t
 t/36_get_multiple.t
-t/37_enclosure.t
-t/38_item_image.t
+t/39_load_type.t
+t/40_xml_deref.t
+t/41_utf8_flag.t
+t/42_indent.t
