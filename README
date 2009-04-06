@@ -53,6 +53,17 @@ METHODS FOR FEED
   $feed = XML::FeedPP->new( "<?xml?><rss version=..." );
     The XML source code is also available as the first argument.
 
+  $feed = XML::FeedPP->new( $source, -type => $type );
+    The "-type" argument allows you to specify type of $source from choice
+    of 'file', 'url' or 'string'.
+
+  $feed = XML::FeedPP->new( $source, utf8_flag => 1 );
+    This makes utf8 flag on for every feed elements. Perl 5.8.1 or later is
+    required to use this.
+
+    Note that any other options for XML::TreePP constructor are also allowed
+    like this. See more detail on XML::TreePP.
+
   $feed = XML::FeedPP::RSS->new( $source );
     This constructor method creates an instance for an RSS 2.0 feed. The
     first argument is optional, but must be valid an RSS source if
@@ -91,6 +102,13 @@ METHODS FOR FEED
     On Perl 5.005 and 5.6.1, only four encodings supported by the Jcode
     module are available: 'UTF-8', 'Shift_JIS', 'EUC-JP' and 'ISO-2022-JP'.
     'UTF-8' is recommended for overall compatibility.
+
+  $string = $feed->to_string( indent => 4 );
+    This makes the output more human readable by indenting appropriately.
+    This doesnft strictly follow the XML specification but does looks nice.
+
+    Note that any other options for XML::TreePP constructor are also allowed
+    like this. See more detail on XML::TreePP.
 
   $feed->to_file( $filename, $encoding );
     This method generate an XML file. The output $encoding is optional, and
@@ -228,38 +246,6 @@ METHODS FOR ITEM
   $link = $item->link();
     This method returns the item's "link" element.
 
-  $hash = $item->enclosure();
-    Returns the item enclosure as the hash reference with "url" (URL),
-    "type" (media type) and optional "length" (number of bytes) and "title"
-    (enclosure type) keys. Note that "title" is supported only for Atom 1.0
-    feeds.
-
-    If there are several enclosures, this method returns an array reference.
-
-  $item->enclosure({ url => $url, type => $type, length => $length, title => $title });
-    Sets the item enclosure.
-
-    An array reference can be passed to this function to set several
-    enclosures.
-
-  $item->attached_image({ mime_order => ['image/svg+xml', 'image/png'] });
-    Returns the image attached to the item.
-
-    The optional parameter can contain key "mime_order" which specifies
-    image mime types in the order of preference. The default "mime_order" is
-    "['image/jpeg', 'image/gif', 'image/png']".
-
-  $item->attached_image($info, { url => $url, type => $type, length => $length, title => $title, width => $width, height => $height });
-    Sets image attached to the item. "url" is the URL of the image, "type"
-    is its MIME type, "length" (optional) is its length in bytes, "title" is
-    image title.
-
-    Setting attached image currently work only for RDF feeds. You may use
-    "enclosure()" method with other feed types. Also note that in RDF "type"
-    and "length" keys don't work.
-
-    $info parameter is currently ignored. Pass "undef" as its value.
-
 ACCESSOR AND MUTATORS
     This module understands only subset of "rdf:*", "dc:*" modules and
     RSS/RDF/Atom's default namespaces by itself. There are NO native methods
@@ -310,14 +296,11 @@ MODULE DEPENDENCIES
     Japanese encodings on Perl 5.005 and 5.6.1, but is NOT required on Perl
     5.8.x and later.
 
-REPOSITORY
-        http://xml-treepp.googlecode.com/svn/trunk/XML-FeedPP/
+AUTHOR
+    Yusuke Kawasaki, http://www.kawa.net/
 
-AUTHORS
-        Yusuke Kawasaki http://www.kawa.net/
-        Victor Porton http://portonvictor.org/
-
-LICENSE
-    This library is free software; you can redistribute it and/or modify it
-    under the same terms as Perl itself.
+COPYRIGHT AND LICENSE
+    Copyright (c) 2006-2009 Yusuke Kawasaki. All rights reserved. This
+    program is free software; you can redistribute it and/or modify it under
+    the same terms as Perl itself.
 
