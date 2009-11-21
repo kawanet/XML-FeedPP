@@ -45,3 +45,6 @@ t/39_load_type.t
 t/40_xml_deref.t
 t/41_utf8_flag.t
 t/42_indent.t
+t/43_indent_atom.t
+t/44_cdata.t
+t/45_cdata_multi.t

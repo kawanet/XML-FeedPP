@@ -1,5 +1,12 @@
 # XML::FeedPP Changes
 
+2009/11/21 (0.41)
+    * supports generating CDATA section by setting SCALAR ref value like XML::TreePP.
+      (thanks to Mario Domgoergen)
+    * pod added to create an empty Atom 1.0 instance intended:
+      XML::FeedPP::Atom::Atom10->new() 
+      (thanks to Andy Piper)
+
 2009/04/07 (0.40)
     * fixed #44082: parse method refuses feeds with UTF-8 BOM
       http://rt.cpan.org/Public/Bug/Display.html?id=44082

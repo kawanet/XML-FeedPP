@@ -80,12 +80,18 @@ METHODS FOR FEED
     The first argument is optional, but must be an Atom source if specified.
     This method returns an empty instance when $source is undefined.
 
-    Atom 1.0 feed is supported since "XML::FeedPP" version 0.30. Atom 0.3 is
-    still default however.
+    Atom 1.0 feed is also supported since "XML::FeedPP" version 0.30. Atom
+    0.3 is still default, however, future version of this module would
+    create Atom 1.0 as default.
+
+  $feed = XML::FeedPP::Atom::Atom03->new();
+    This creates an empty Atom 0.3 instance obviously.
+
+  $feed = XML::FeedPP::Atom::Atom10->new();
+    This creates an empty Atom 1.0 instance intended.
 
   $feed = XML::FeedPP::RSS->new( link => $link, title => $tile, ... );
-    This constructor method creates an instance which has "link", "title"
-    elements etc.
+    This creates a RSS instance which has "link", "title" elements etc.
 
   $feed->load( $source );
     This method loads an RSS/RDF/Atom file, much like "new()" method does.
