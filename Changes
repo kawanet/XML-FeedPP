@@ -1,8 +1,9 @@
 # XML::FeedPP Changes
 
 2010/10/31 (0.42)
-    * fixed #55197: Not a HASH reference at /home/dom/perl5/lib/perl5/XML/FeedPP.pm line 2260
+    * fixed #55197: Not a HASH reference at XML/FeedPP.pm line 2260
       https://rt.cpan.org/Ticket/Display.html?id=55197
+      (thanks to MDOM)
 
 2009/11/21 (0.41)
     * supports generating CDATA section by setting SCALAR ref value like XML::TreePP.
