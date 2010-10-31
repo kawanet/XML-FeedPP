@@ -377,11 +377,18 @@ and 5.6.1, but is NOT required on Perl 5.8.x and later.
 
 Yusuke Kawasaki, http://www.kawa.net/
 
-=head1 COPYRIGHT AND LICENSE
+=head1 COPYRIGHT
 
-Copyright (c) 2006-2009 Yusuke Kawasaki. All rights reserved.
-This program is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself.
+The following copyright notice applies to all the files provided in
+this distribution, including binary files, unless explicitly noted
+otherwise.
+
+Copyright 2006-2010 Yusuke Kawasaki
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
 
 =cut
 
@@ -400,7 +407,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.41";
+$VERSION = "0.42";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
@@ -2256,7 +2263,7 @@ sub set_value {
     my $elem = shift;
     my $text = shift;
     my $attr = \@_;
-    if ( ref $self->{$elem} ) {
+    if ( UNIVERSAL::isa( $self->{$elem}, 'HASH' )) {
         $self->{$elem}->{'#text'} = $text;
     }
     else {
