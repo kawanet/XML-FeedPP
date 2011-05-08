@@ -99,6 +99,10 @@ EOT
 	ok( $feed->isa( 'XML::FeedPP::Atom::Atom10' ), 'XML::FeedPP::Atom::Atom10' );
 	is( $feed->title, 'dive into mark', 'feed title' );
 	like( $feed->description, qr/effortless/, 'feed description' );
+
+my $desc = $feed->description;
+print "[$desc]\n";
+
 	is( $feed->pubDate, '2005-07-31T12:29:29Z', 'feed pubDate' );
 #	is( $feed->guid, 'tag:example.org,2003:3', 'feed guid' );
 	is( $feed->link, 'http://example.org/', 'feed link' );
@@ -112,6 +116,12 @@ EOT
 	is( $item->guid, 'tag:example.org,2003:3.2397', 'item guid' );
 	is( $item->pubDate, '2005-07-31T12:29:29Z', 'item pubDate' );
 	is( $item->author, 'Mark Pilgrim', 'item author' );
+
+$desc = $item->description;
+print "[$desc]\n";
+use Data::Dumper;
+print Dumper($desc);
+
 }
 # ----------------------------------------------------------------
 ;1;

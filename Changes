@@ -1,5 +1,10 @@
 # XML::FeedPP Changes
 
+2011/05/08 (0.43)
+    * fixed #67268: Wrong return value of description() with xhtml content in atom feeds
+      https://rt.cpan.org/Ticket/Display.html?id=67268
+      (thanks to MDOM)
+
 2010/10/31 (0.42)
     * fixed #55197: Not a HASH reference at XML/FeedPP.pm line 2260
       https://rt.cpan.org/Ticket/Display.html?id=55197

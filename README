@@ -26,7 +26,7 @@ SYNOPSIS
 
     Convert some RSS/RDF files to Atom format:
 
-        my $feed = XML::FeedPP::Atom->new();                # create empty atom file
+        my $feed = XML::FeedPP::Atom::Atom10->new();        # create empty atom file
         $feed->merge( "rss.xml" );                          # load local RSS file
         $feed->merge( "http://www.kawa.net/index.rdf" );    # load remote RDF file
         my $now = time();
@@ -145,9 +145,9 @@ METHODS FOR FEED
     This method returns an array of all matched items in array context. This
     method returns the first matched item in scalar context.
 
-  $feed->remove_item( $index );
-    This method removes an item/entry from $feed, where $index is a valid
-    zero-based array index.
+  $feed->remove_item( $index or $link );
+    This method removes an item/entry specified by zero-based array index or
+    link URL.
 
   $feed->clear_item();
     This method removes all items/entries from the $feed.
@@ -295,6 +295,18 @@ DATE AND TIME FORMATS
     "1970-01-01T00:00:00Z". You know, this is the native format of Perl's
     "time()" function.
 
+USING MEDIA RSS
+    To publish Media RSS, add the "media" namespace then use "set()" setter
+    method to manipulate "media:content" element, etc.
+
+        my $feed = XML::FeedPP::RSS->new();
+        $feed->xmlns('xmlns:media' => 'http://search.yahoo.com/mrss/');
+        my $item = $feed->add_item('http://www.example.com/index.html');
+        $item->set('media:content@url' => 'http://www.example.com/image.jpg');
+        $item->set('media:content@type' => 'image/jpeg');
+        $item->set('media:content@width' => 640);
+        $item->set('media:content@height' => 480);
+
 MODULE DEPENDENCIES
     "XML::FeedPP" requires only XML::TreePP which likewise is a pure Perl
     implementation. The standard LWP::UserAgent is required to download
@@ -309,7 +321,7 @@ COPYRIGHT
     The following copyright notice applies to all the files provided in this
     distribution, including binary files, unless explicitly noted otherwise.
 
-    Copyright 2006-2010 Yusuke Kawasaki
+    Copyright 2006-2011 Yusuke Kawasaki
 
 LICENSE
     This library is free software; you can redistribute it and/or modify it
