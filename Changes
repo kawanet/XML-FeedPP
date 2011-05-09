@@ -1,5 +1,10 @@
 # XML::FeedPP Changes
 
+2011/05/09 (0.45_01) ** DEVELOPER RELEASE
+    * supports subclassing. t/47_subclass_content.t added.
+      https://rt.cpan.org/Public/Bug/Display.html?id=58422
+      (thanks to bitcard)
+
 2011/05/08 (0.43)
     * fixed #67268: Wrong return value of description() with xhtml content in atom feeds
       https://rt.cpan.org/Ticket/Display.html?id=67268
