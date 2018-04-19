@@ -69,7 +69,7 @@ from choice of C<'file'>, C<'url'> or C<'string'>.
 
 =head2  $feed = XML::FeedPP->new( $source, utf8_flag => 1 );
 
-This makes utf8 flag on for every feed elements.
+This makes utf8 flag on for all feed elements.
 Perl 5.8.1 or later is required to use this.
 
 Note that any other options for C<XML::TreePP> constructor are also
@@ -479,21 +479,25 @@ $ITEM_METHODS = [qw(
 sub new {
     my $package = shift;
     my( $init, $source, @rest ) = &XML::FeedPP::Util::param_even_odd(@_);
-    Carp::croak "No feed source" unless defined $source;
+    my $do_autodetect = $package eq __PACKAGE__;
 
-    my $self = {};
-    bless $self, $package;
-    $self->load($source, @rest);
+    Carp::croak "No feed source"
+        if $do_autodetect && !$source;
 
-    my $class = $self->detect_format;
-    unless ( $class ) {
-        my $root = ref $self ? join( " ", sort keys %$self ) : $self;
-        my $class = ref $self ? ref $self : $self;
-        Carp::croak "Invalid $class feed format: $root";
+    my $self = bless {}, $package;
+    $self->load($source, @rest) if $source;
+
+    if($do_autodetect) {
+        my $class = $self->detect_format;
+        unless ( $class ) {
+            my $root = ref $self ? join( " ", sort keys %$self ) : $self;
+            my $class = ref $self ? ref $self : $self;
+            Carp::croak "Invalid $class feed format: $root";
+        }
+        bless $self, $class;
     }
-    bless $self, $class;
 
-    $self->validate_feed();
+    $self->validate_feed() if $source;
     $self->init_feed();
     $self->elements(@$init) if ref $init;
     $self;
@@ -512,7 +516,7 @@ sub detect_format {
     my $list = $self->available_format;
     foreach my $class ( @$list ) {
         my $hit = $class->test_feed($self);
-       return $class if $hit;
+        return $class if $hit;
     }
     undef;
 }
@@ -845,27 +849,6 @@ sub pubDate { Carp::croak((ref $_[0])."->pubDate() is not implemented"); }
 sub image { Carp::croak((ref $_[0])."->image() is not implemented"); }
 
 # ----------------------------------------------------------------
-package XML::FeedPP::Common;
-use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP );
-
-sub new {
-    my $package = shift;
-    my( $init, $source, @rest ) = &XML::FeedPP::Util::param_even_odd(@_);
-
-    my $self = {};
-    bless $self, $package;
-    if ( defined $source ) {
-        $self->load($source, @rest);
-        $self->validate_feed();
-    }
-    $self->init_feed();
-    $self->elements(@$init) if ref $init;
-    $self;
-}
-
-# ----------------------------------------------------------------
 package XML::FeedPP::Plugin;
 use strict;
 
@@ -904,7 +887,7 @@ sub elements {
 package XML::FeedPP::RSS;
 use strict;
 use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Common );
+@ISA = qw( XML::FeedPP );
 
 sub channel_class {
     'XML::FeedPP::RSS::Channel';
@@ -1189,7 +1172,7 @@ sub image {
 package XML::FeedPP::RDF;
 use strict;
 use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Common );
+@ISA = qw( XML::FeedPP );
 
 sub channel_class {
     'XML::FeedPP::RDF::Channel';
@@ -1493,7 +1476,7 @@ sub get_pubDate_native {
 package XML::FeedPP::Atom::Common;
 use strict;
 use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Common );
+@ISA = qw( XML::FeedPP );
 
 sub merge_native_channel {
     my $self = shift;
