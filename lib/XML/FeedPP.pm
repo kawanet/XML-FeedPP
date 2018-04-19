@@ -187,8 +187,8 @@ This method sorts the order of items in $feed by C<pubDate>.
 
 =head2  $feed->uniq_item();
 
-This method makes items unique. The second and succeeding items
-that have the same link URL are removed.
+Reduces the list of items, not to include duplicates.  RDF and Atoms
+have a guid attribute to defined uniqueness, for RSS we use the link.
 
 =head2  $feed->normalize();
 
@@ -295,8 +295,10 @@ C<author> for Atom 0.3/1.0.
 
 This method sets/gets the item's C<guid> element,
 returning its current value when $guid is undefined.
-It is mapped to C<id> element for Atom, and ignored for RDF.
-The second argument is optional.
+
+It is mapped to C<id> element for Atom, and ignored for RDF.  In case of
+RSS, it will return a HASH.  The C<isParmaLink> is supported by RSS only,
+and optional.
 
 =head2  $item->set( $key => $value, ... );
 
@@ -1024,13 +1026,12 @@ sub sort_item {
 sub uniq_item {
     my $self  = shift;
     my $list  = $self->{rss}->{channel}->{item} or return;
-    my $check = {};
-    my $uniq  = [];
+    my (%check, @uniq);
     foreach my $item (@$list) {
-        my $link = $item->link();
-        push( @$uniq, $item ) unless $check->{$link}++;
+        my $key = $item->guid() || $item->link();
+        push( @uniq, $item ) unless $check{$key}++;
     }
-    @$list = @$uniq;
+    @$list = @uniq;
     scalar @$list;
 }
 
@@ -1346,13 +1347,12 @@ sub sort_item {
 sub uniq_item {
     my $self  = shift;
     my $list  = $self->{'rdf:RDF'}->{item} or return;
-    my $check = {};
-    my $uniq  = [];
+    my (%check, @uniq);
     foreach my $item (@$list) {
         my $link = $item->link();
-        push( @$uniq, $item ) unless $check->{$link}++;
+        push( @uniq, $item ) unless $check{$link}++;
     }
-    $self->{'rdf:RDF'}->{item} = $uniq;
+    $self->{'rdf:RDF'}->{item} = \@uniq;
     $self->__refresh_items();
 }
 
@@ -1570,13 +1570,12 @@ sub sort_item {
 sub uniq_item {
     my $self  = shift;
     my $list  = $self->{feed}->{entry} or return;
-    my $check = {};
-    my $uniq  = [];
+    my (%check, @uniq);
     foreach my $item (@$list) {
-        my $link = $item->link();
-        push( @$uniq, $item ) unless $check->{$link}++;
+        my $link = $item->guid();
+        push( @uniq, $item ) unless $check{$link}++;
     }
-    @$list = @$uniq;
+    @$list = @uniq;
 }
 
 sub limit_item {

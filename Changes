@@ -1,5 +1,9 @@
 # XML::FeedPP Changes
 
+2018/
+    * fixed #35061: use guid for uniqueness, when available.
+      (thanks to avbidder)
+
 2011/05/09 (0.45_01) ** DEVELOPER RELEASE
     * supports subclassing. t/47_subclass_content.t added.
       https://rt.cpan.org/Public/Bug/Display.html?id=58422
