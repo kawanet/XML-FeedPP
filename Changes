@@ -4,7 +4,10 @@
     * fixed #35061: use guid for uniqueness, when available.
       (thanks to avbidder)
     * improved #58422: XML::FeedPP cannot be subclassed.
+      (thanks to bitcard)
     * remove useless XML::FeedPP::Common layer
+    * fixed #71318: save use of timegm
+      (thanks to Brian Gomes Bascoy)
 
 2011/05/09 (0.45_01) ** DEVELOPER RELEASE
     * supports subclassing. t/47_subclass_content.t added.

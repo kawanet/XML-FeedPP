@@ -2476,7 +2476,9 @@ sub w3cdtf_to_rfc1123 {
     $hour ||= 0;
     $min ||= 0;
     $sec ||= 0;
-    my $epoch = Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 );
+    my $epoch = eval { Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 ) }
+        or return;
+
     my $wday = ( gmtime($epoch) )[6];
     if ( defined $tz && $tz ne '' && $tz ne 'Z' ) {
         my $off = &get_tz_offset($tz) / 60;
@@ -2499,7 +2501,8 @@ sub rfc1123_to_epoch {
     $year += 2000 if $year < 77;
     $year += 1900 if $year < 100;
     $mon = $MoY{ uc($mon) } or return;
-    my $epoch = Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 );
+    my $epoch = eval { Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 ) }
+        or return;
     $epoch -= &get_tz_offset( $tz );
     $epoch;
 }
@@ -2512,7 +2515,9 @@ sub w3cdtf_to_epoch {
     $hour ||= 0;
     $min ||= 0;
     $sec ||= 0;
-    my $epoch = Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 );
+    my $epoch = eval { Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year-1900 ) }
+        or return;
+
     $epoch -= &get_tz_offset( $tz );
     $epoch;
 }
