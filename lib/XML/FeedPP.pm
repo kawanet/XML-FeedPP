@@ -2349,10 +2349,12 @@ sub _fetch_value {
 
     if ( UNIVERSAL::isa( $value, 'HASH' )) {
         # text node of an element with attributes
-        if ( exists $value->{'#text'} ) {
-            return $self->_fetch_value($value->{'#text'})
-        }
-    } elsif ( UNIVERSAL::isa( $value, 'SCALAR' )) {
+        return defined $value->{'#text'}
+          ? $self->_fetch_value($value->{'#text'})
+          : '';
+    }
+
+    if ( UNIVERSAL::isa( $value, 'SCALAR' )) {
         # CDATA section as a scalar reference
         return $$value;
     }

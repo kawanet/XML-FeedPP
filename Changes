@@ -18,6 +18,8 @@
       (thanks to Jesse Quinn)
     * fixed #124569: timegm should be called with 4-digit year
       (thanks to bitcardbmw)
+    * fixed #125052: returns HASH for empty field
+      (thanks to Mark Overmeer)
 
 2011/05/09 (0.45_01) ** DEVELOPER RELEASE
     * supports subclassing. t/47_subclass_content.t added.
