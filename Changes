@@ -14,6 +14,8 @@
       (thanks to colink)
     * fixed #84798: forgot the 'use' in the documentation
       (thanks to jidanny)
+    * fixed #87373: ignore namespace prefixes when you collect a value
+      (thanks to Jesse Quinn)
 
 2011/05/09 (0.45_01) ** DEVELOPER RELEASE
     * supports subclassing. t/47_subclass_content.t added.

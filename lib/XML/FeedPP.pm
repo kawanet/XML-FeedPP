@@ -2319,7 +2319,15 @@ sub get_or_set {
 sub get_value {
     my $self = shift;
     my $elem = shift;
-    return unless exists $self->{$elem};
+    unless(exists $self->{$elem}) {
+        #XXX TreePP does not understand prefixes, which is usually not a
+        # problem because most clients break on them... "best practices"
+        # for feeds often explicitly state to use "the default" namespace.
+        # Let's try to ignore the namespace here.
+        ($elem) = grep /\:\Q$elem\E$/, keys %$self;
+        defined $elem or return;
+    }
+
     my $value = $self->{$elem};
     return $value unless ref $value;
 
