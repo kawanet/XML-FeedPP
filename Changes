@@ -1,6 +1,6 @@
-# XML::FeedPP Changes
+=== version history of XML::FeedPP
 
-2018/
+version 0.95: Sat 21 Apr 01:15:08 CEST 2018
     * fixed #35061: use guid for uniqueness, when available.
       (thanks to avbidder)
     * improved #58422: XML::FeedPP cannot be subclassed.
