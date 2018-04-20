@@ -425,7 +425,7 @@ use vars qw(
     $XMLNS_ATOM10
 );
 
-$VERSION = "0.45_01";
+$VERSION = "0.95";
 
 $RSS20_VERSION  = '2.0';
 $ATOM03_VERSION = '0.3';
