@@ -675,11 +675,15 @@ sub add_clone_item {
 
     if ( ref $dstitem eq ref $srcitem ) {
         XML::FeedPP::Util::merge_hash( $dstitem, $srcitem );
+
+        # A new item starts with a link, and then a merge.  Setting the
+        # link often affects the guid.  The merge will not set the guid
+        # anymore.  So, let's overrule that.
+        if(my $guid = $srcitem->{guid}) {
+            $dstitem->{guid} = $guid;
+        }
     }
     else {
-#       my $link = $srcitem->link();
-#       $dstitem->link($link) if defined $link;
-
         my $title = $srcitem->title();
         $dstitem->title($title) if defined $title;
 
@@ -1244,6 +1248,7 @@ sub merge_native_channel {
 
     XML::FeedPP::Util::merge_hash( $self->{'rdf:RDF'}, $tree->{'rdf:RDF'},
         qw( channel item ) );
+
     XML::FeedPP::Util::merge_hash(
         $self->{'rdf:RDF'}->{channel},
         $tree->{'rdf:RDF'}->{channel},
@@ -2581,10 +2586,10 @@ sub get_epoch {
 sub merge_hash {
     my $base  = shift or return;
     my $merge = shift or return;
-    my $map = { map { $_ => 1 } @_ };
+
+    my %exclude = map { $_ => 1 } @_;
     foreach my $key ( keys %$merge ) {
-        next if exists $map->{$key};
-        next if exists $base->{$key};
+        next if $exclude{$key} || exists $base->{$key};
         $base->{$key} = $merge->{$key};
     }
 }
