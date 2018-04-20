@@ -10,8 +10,10 @@
       (thanks to Brian Gomes Bascoy)
     * fixed #72523: merge of items in channel changes guid
       (thanks to Никулин Юрий)
-	* fixed #78407: Empty item in RSS-feed breaks processing
+    * fixed #78407: Empty item in RSS-feed breaks processing
       (thanks to colink)
+    * fixed #84798: forgot the 'use' in the documentation
+      (thanks to jidanny)
 
 2011/05/09 (0.45_01) ** DEVELOPER RELEASE
     * supports subclassing. t/47_subclass_content.t added.

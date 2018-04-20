@@ -6,6 +6,7 @@ XML::FeedPP -- Parse/write/merge/edit RSS/RDF/Atom syndication feeds
 
 Get an RSS file and parse it:
 
+    use XML::FeedPP ();
     my $source = 'http://use.perl.org/index.rss';
     my $feed = XML::FeedPP->new( $source );
     print "Title: ", $feed->title(), "\n";
@@ -17,6 +18,7 @@ Get an RSS file and parse it:
 
 Generate an RDF file and save it:
 
+    use XML::FeedPP ();
     my $feed = XML::FeedPP::RDF->new();
     $feed->title( "use Perl" );
     $feed->link( "http://use.perl.org/" );
@@ -28,6 +30,7 @@ Generate an RDF file and save it:
 
 Convert some RSS/RDF files to Atom format:
 
+    use XML::FeedPP ();
     my $feed = XML::FeedPP::Atom::Atom10->new();        # create empty atom file
     $feed->merge( "rss.xml" );                          # load local RSS file
     $feed->merge( "http://www.kawa.net/index.rdf" );    # load remote RDF file
