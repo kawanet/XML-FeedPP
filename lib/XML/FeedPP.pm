@@ -918,18 +918,15 @@ sub init_feed {
     }
     $self->{rss}->{'-version'} ||= $XML::FeedPP::RSS20_VERSION;
 
-    $self->{rss}->{channel} ||= $self->channel_class->new();
-    $self->channel_class->ref_bless( $self->{rss}->{channel} );
+    my $channel = $self->{rss}{channel} ||= $self->channel_class->new();
+    $self->channel_class->ref_bless($channel);
 
-    $self->{rss}->{channel}->{item} ||= [];
-    if ( UNIVERSAL::isa( $self->{rss}->{channel}->{item}, 'HASH' ) ) {
+    my $items = $channel->{item} || [];
+	my @items = grep ref $_,    # skip empty items
+        UNIVERSAL::isa($items, 'HASH') ? $items : @$items;
 
-        # only one item
-        $self->{rss}->{channel}->{item} = [ $self->{rss}->{channel}->{item} ];
-    }
-    foreach my $item ( @{ $self->{rss}->{channel}->{item} } ) {
-        $self->item_class->ref_bless($item);
-    }
+    $self->item_class->ref_bless($_) for @items;
+    $channel->{item} = \@items;
 
     $self;
 }
