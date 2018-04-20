@@ -16,6 +16,8 @@
       (thanks to jidanny)
     * fixed #87373: ignore namespace prefixes when you collect a value
       (thanks to Jesse Quinn)
+    * fixed #124569: timegm should be called with 4-digit year
+      (thanks to bitcardbmw)
 
 2011/05/09 (0.45_01) ** DEVELOPER RELEASE
     * supports subclassing. t/47_subclass_content.t added.
