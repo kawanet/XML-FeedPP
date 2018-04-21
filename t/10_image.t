@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------
     use strict;
-    use Test::More tests => 17;
+    use Test::More tests => 19;
     BEGIN { use_ok('XML::FeedPP') };
 # ----------------------------------------------------------------
     my $ftitle = "Title of the site";
@@ -10,7 +10,7 @@
     my $fright = "Owner of the site";
     my $flink  = "http://www.kawa.net/";
     my $flang  = "ja";
-    my $link1 = "http://www.perl.org/";
+    my $link1  = "http://www.perl.org/";
     my $title1 = "The Perl Directory - perl.org";
 # ----------------------------------------------------------------
     my $image_url   = "http://www.kawa.net/xp/images/mixi-3.jpg";
@@ -21,15 +21,19 @@
     my $image_height = 480;
 # ----------------------------------------------------------------
     my $feed1 = XML::FeedPP::RSS->new();
+    isa_ok $feed1, 'XML::FeedPP::RSS';
     $feed1->title( $ftitle );
     $feed1->description( $fdesc );
     $feed1->pubDate( $fdateA );
     $feed1->copyright( $fright );
     $feed1->link( $flink );
     $feed1->language( $flang );
+
     my $item1 = $feed1->add_item( $link1 );
+    isa_ok $item1, 'XML::FeedPP::RSS::Item';
     $item1->title( $title1 );
     $feed1->image( $image_url, $image_title, $image_link );
+
     my $source1 = $feed1->to_string();
 # ----------------------------------------------------------------
     my @image1 = $feed1->image();
