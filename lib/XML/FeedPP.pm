@@ -570,12 +570,8 @@ sub get_item {
     if ( defined $num ) {
         return $self->{rss}->{channel}->{item}->[$num];
     }
-    elsif (wantarray) {
-        return @{ $self->{rss}->{channel}->{item} };
-    }
-    else {
-        return scalar @{ $self->{rss}->{channel}->{item} };
-    }
+
+    @{ $self->{rss}->{channel}->{item} };
 }
 
 sub sort_item {
@@ -889,12 +885,8 @@ sub get_item {
     if ( defined $num ) {
         return $self->{'rdf:RDF'}->{item}->[$num];
     }
-    elsif (wantarray) {
-        return @{ $self->{'rdf:RDF'}->{item} };
-    }
-    else {
-        return scalar @{ $self->{'rdf:RDF'}->{item} };
-    }
+
+    @{ $self->{'rdf:RDF'}->{item} };
 }
 
 sub sort_item {
@@ -1109,12 +1101,8 @@ sub get_item {
     if ( defined $num ) {
         return $self->{feed}->{entry}->[$num];
     }
-    elsif (wantarray) {
-        return @{ $self->{feed}->{entry} };
-    }
-    else {
-        return scalar @{ $self->{feed}->{entry} };
-    }
+
+    @{ $self->{feed}->{entry} };
 }
 
 sub sort_item {
