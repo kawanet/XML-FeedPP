@@ -111,11 +111,10 @@ sub detect_format {
 
 sub load {
     my $self   = shift;
-    my $source = shift;
+    my $source = shift or croak "No feed source";
     my $args   = { @_ };
-    my $method = $args->{'-type'};
-    Carp::croak "No feed source" unless defined $source;
 
+    my $method = $args->{-type};
     if ( ! $method ) {
         if ( $source =~ m#^https?://#s ) {
             $method = 'url';
@@ -128,29 +127,21 @@ sub load {
             $method = 'file';
         }
         else {
-            Carp::croak "Invalid feed source: $source";
+            croak "Invalid feed source: $source";
         }
     }
 
-    my $opts = { map { $_ => $args->{$_} } grep { ! /^-/ } keys %$args };
-    my $tpp = XML::TreePP->new(%TREEPP_OPTIONS, %$opts);
+    my @opts = map +($_ => $args->{$_}), grep !/^-/, keys %$args;
+    my $tpp  = XML::TreePP->new(%TREEPP_OPTIONS, @opts);
 
-    my $tree;
-    if ( $method eq 'url' ) {
-        $tree = $tpp->parsehttp( GET => $source );
-    }
-    elsif ( $method eq 'string' ) {
-        $tree = $tpp->parse($source);
-    }
-    elsif ( $method eq 'file' ) {
-        $tree = $tpp->parsefile($source);
-    }
-    else {
-        Carp::croak "Invalid load type: $method";
-    }
+    my $tree
+      = $method eq 'url'    ? $tpp->parsehttp(GET => $source)
+      : $method eq 'string' ? $tpp->parse($source)
+      : $method eq 'file'   ? $tpp->parsefile($source)
+      : croak "Invalid load type: $method";
 
-    croak "Loading failed: $source" unless ref $tree;
-    %$self = %$tree;    # override myself
+    ref $tree or croak "Loading failed: $source";
+    %$self = %$tree;    # absorb myself
     $self;
 }
 
