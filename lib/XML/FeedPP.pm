@@ -861,8 +861,7 @@ sub run {
 # ----------------------------------------------------------------
 package XML::FeedPP::Item;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Element );
+our @ISA = 'XML::FeedPP::Element';
 
 *get_pubDate_w3cdtf  = \&XML::FeedPP::get_pubDate_w3cdtf;   # import
 *get_pubDate_rfc1123 = \&XML::FeedPP::get_pubDate_rfc1123;
@@ -885,8 +884,7 @@ sub elements {
 # ----------------------------------------------------------------
 package XML::FeedPP::RSS;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP );
+our @ISA = 'XML::FeedPP';
 
 sub channel_class {
     'XML::FeedPP::RSS::Channel';
@@ -1080,14 +1078,12 @@ sub image {
 # ----------------------------------------------------------------
 package XML::FeedPP::RSS::Channel;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Element );
+our @ISA = qw( XML::FeedPP::Element );
 
 # ----------------------------------------------------------------
 package XML::FeedPP::RSS::Item;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Item );
+our @ISA = 'XML::FeedPP::Item';
 
 sub title       { shift->get_or_set( "title",       @_ ); }
 sub description { shift->get_or_set( "description", @_ ); }
@@ -1167,8 +1163,7 @@ sub image {
 # ----------------------------------------------------------------
 package XML::FeedPP::RDF;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP );
+our @ISA = 'XML::FeedPP';
 
 sub channel_class {
     'XML::FeedPP::RDF::Channel';
@@ -1425,14 +1420,12 @@ sub image {
 # ----------------------------------------------------------------
 package XML::FeedPP::RDF::Channel;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Element );
+our @ISA = 'XML::FeedPP::Element';
 
 # ----------------------------------------------------------------
 package XML::FeedPP::RDF::Item;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Item );
+our @ISA = 'XML::FeedPP::Item';
 
 sub title       { shift->get_or_set( "title",       @_ ); }
 sub description { shift->get_or_set( "description", @_ ); }
@@ -1472,8 +1465,7 @@ sub get_pubDate_native {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Common;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP );
+our @ISA = 'XML::FeedPP';
 
 sub merge_native_channel {
     my $self = shift;
@@ -1638,8 +1630,7 @@ sub image {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom03;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Common );
+our @ISA = 'XML::FeedPP::Atom::Common';
 
 sub channel_class {
     'XML::FeedPP::Atom::Atom03::Feed';
@@ -1770,8 +1761,7 @@ sub link {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom10;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Common );
+our @ISA = 'XML::FeedPP::Atom::Common';
 
 sub channel_class {
     'XML::FeedPP::Atom::Atom10::Feed';
@@ -1900,8 +1890,7 @@ sub link {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Atom03 );
+our @ISA = 'XML::FeedPP::Atom::Atom03';
 
 # @ISA = qw( XML::FeedPP::Atom::Atom10 );   # if Atom 1.0 for default
 
@@ -1916,8 +1905,7 @@ sub test_feed {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Common::Feed;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Element );
+our @ISA = 'XML::FeedPP::Element';
 
 # <content type="xhtml"><div>...</div></content>
 # http://www.ietf.org/rfc/rfc4287.txt
@@ -1948,20 +1936,17 @@ sub _fetch_value {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom03::Feed;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Common::Feed );
+our @ISA = 'XML::FeedPP::Atom::Common::Feed';
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom10::Feed;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Common::Feed );
+our @ISA = 'XML::FeedPP::Atom::Common::Feed';
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Common::Entry;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Item );
+our @ISA = 'XML::FeedPP::Item';
 
 sub author {
     my $self = shift;
@@ -1981,8 +1966,7 @@ sub guid { shift->get_or_set( 'id', @_ ); }
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom03::Entry;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Common::Entry );
+our @ISA = 'XML::FeedPP::Atom::Common::Entry';
 
 sub description {
     my $self = shift;
@@ -2071,8 +2055,7 @@ sub category { undef; }    # this element is NOT supported for Atom 0.3
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom10::Entry;
 use strict;
-use vars qw( @ISA );
-@ISA = qw( XML::FeedPP::Atom::Common::Entry );
+our @ISA = 'XML::FeedPP::Atom::Common::Entry';
 
 sub description {
     my $self = shift;
