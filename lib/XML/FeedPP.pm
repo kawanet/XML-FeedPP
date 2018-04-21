@@ -417,34 +417,26 @@ use Carp;
 use Time::Local;
 use XML::TreePP;
 
-use vars qw(
-    $VERSION        $RSS20_VERSION  $ATOM03_VERSION
-    $XMLNS_RDF      $XMLNS_RSS      $XMLNS_DC       $XMLNS_ATOM03
-    $XMLNS_NOCOPY   $TREEPP_OPTIONS $MIME_TYPES
-    $FEED_METHODS   $ITEM_METHODS
-    $XMLNS_ATOM10
-);
+our $VERSION = '0.96';
 
-$VERSION = "0.96";
+our $RSS20_VERSION  = '2.0';
+our $ATOM03_VERSION = '0.3';
 
-$RSS20_VERSION  = '2.0';
-$ATOM03_VERSION = '0.3';
+our $XMLNS_RDF    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+our $XMLNS_RSS    = 'http://purl.org/rss/1.0/';
+our $XMLNS_DC     = 'http://purl.org/dc/elements/1.1/';
+our $XMLNS_ATOM03 = 'http://purl.org/atom/ns#';
+our $XMLNS_ATOM10 = 'http://www.w3.org/2005/Atom';
+our $XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:atom )];
 
-$XMLNS_RDF    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-$XMLNS_RSS    = 'http://purl.org/rss/1.0/';
-$XMLNS_DC     = 'http://purl.org/dc/elements/1.1/';
-$XMLNS_ATOM03 = 'http://purl.org/atom/ns#';
-$XMLNS_ATOM10 = 'http://www.w3.org/2005/Atom';
-$XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:atom )];
-
-$TREEPP_OPTIONS = {
+our $TREEPP_OPTIONS = {
     force_array => [qw( item rdf:li entry )],
     first_out   => [qw( -xmlns:rdf -xmlns -rel -type url title link )],
     last_out    => [qw( description image item items entry -width -height )],
     user_agent  => "XML-FeedPP/$VERSION ",
 };
 
-$MIME_TYPES = { reverse qw(
+our $MIME_TYPES = { reverse qw(
     image/bmp                       bmp
     image/gif                       gif
     image/jpeg                      jpeg
@@ -456,7 +448,7 @@ $MIME_TYPES = { reverse qw(
     image/x-xpixmap                 xpm
 )};
 
-$FEED_METHODS = [qw(
+our $FEED_METHODS = [qw(
     title
     description
     language
@@ -467,7 +459,7 @@ $FEED_METHODS = [qw(
     set
 )];
 
-$ITEM_METHODS = [qw(
+our $ITEM_METHODS = [qw(
     title
     description
     category
