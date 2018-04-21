@@ -16,7 +16,7 @@ our $XMLNS_RSS    = 'http://purl.org/rss/1.0/';
 our $XMLNS_DC     = 'http://purl.org/dc/elements/1.1/';
 our $XMLNS_ATOM03 = 'http://purl.org/atom/ns#';
 our $XMLNS_ATOM10 = 'http://www.w3.org/2005/Atom';
-our @XMLNS_NOCOPY = qw( xmlns xmlns:rdf xmlns:dc xmlns:atom );
+our %XMLNS_NOCOPY = map +($_ => 1), qw(xmlns xmlns:rdf xmlns:dc xmlns:atom);
 
 our %TREEPP_OPTIONS = (
     force_array => [qw( item rdf:li entry )],
@@ -197,44 +197,49 @@ sub merge_common_channel {
     my $self   = shift;
     my $target = shift or return;
 
-    my $title1 = $self->title();
-    my $title2 = $target->title();
-    $self->title($title2) if ( !defined $title1 && defined $title2 );
-
-    my $desc1 = $self->description();
-    my $desc2 = $target->description();
-    $self->description($desc2) if ( !defined $desc1 && defined $desc2 );
-
-    my $link1 = $self->link();
-    my $link2 = $target->link();
-    $self->link($link2) if ( !defined $link1 && defined $link2 );
-
-    my $lang1 = $self->language();
-    my $lang2 = $target->language();
-    $self->language($lang2) if ( !defined $lang1 && defined $lang2 );
-
-    my $right1 = $self->copyright();
-    my $right2 = $target->copyright();
-    $self->copyright($right2) if ( !defined $right1 && defined $right2 );
-
-    my $pubDate1 = $self->pubDate();
-    my $pubDate2 = $target->pubDate();
-    $self->pubDate($pubDate2) if ( !defined $pubDate1 && defined $pubDate2 );
-
-    my @image1 = $self->image();
-    my @image2 = $target->image();
-    $self->image(@image2) if ( !defined $image1[0] && defined $image2[0] );
-
-    my @xmlns1 = $self->xmlns();
-    my @xmlns2 = $target->xmlns();
-    my $xmlchk = { map { $_ => 1 } @xmlns1, @XML::FeedPP::XMLNS_NOCOPY };
-    foreach my $ns (@xmlns2) {
-        next if exists $xmlchk->{$ns};
-        $self->xmlns( $ns, $target->xmlns($ns) );
+    unless($self->title) {
+    	my $title = $target->title;
+    	$self->title($title) if defined $title;
     }
 
-    $self->merge_module_nodes( $self->docroot, $target->docroot );
+    unless($self->description) {
+    	my $descr = $target->description;
+        $self->description($descr) if defined $descr;
+    }
 
+    unless($self->link) {
+        my $link = $target->link;
+        $self->link($link) if defined $link;
+    }
+
+    unless($self->language) {
+        my $lang = $target->language();
+        $self->language($lang) if defined $lang;
+    }
+
+    unless($self->copyright) {
+        my $right = $target->copyright;
+        $self->copyright($right) if defined $right;
+    }
+
+    unless($self->pubDate) {
+        my $pubDate = $target->pubDate;
+        $self->pubDate($pubDate) if defined $pubDate;
+    }
+
+    my @images = $self->image;
+    unless($images[0]) {
+        @images = $target->image;
+        $self->image(@images) if $images[0];
+    }
+
+    my %have_ns = map +($_ => 1), $self->xmlns;
+    foreach my $ns ($target->xmlns) {
+        $self->xmlns($ns, $target->xmlns($ns))
+		    unless $XML::FeedPP::XMLNS_NOCOPY{$ns} || $have_ns{$ns}++;
+    }
+
+    $self->merge_module_nodes($self->docroot, $target->docroot);
     $self;
 }
 
