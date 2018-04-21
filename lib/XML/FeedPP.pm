@@ -48,7 +48,7 @@ our @FEED_METHODS = qw(
     set
 );
 
-our @ITEM_METHODS = qw(
+our %IS_ITEM_METHOD = map +($_ => 1), qw(
     title
     description
     category
@@ -391,7 +391,6 @@ sub match_item {
     my @list = $self->get_item();
     @list or return;
 
-    my $methods = { map {$_=>1} @ITEM_METHODS };
     my $args = [ @_ ];
     my $out = [];
     foreach my $item ( @list ) {
@@ -400,7 +399,7 @@ sub match_item {
         while( 1 ) {
             my $key  = $args->[$i++] or last;
             my $test = $args->[$i++];
-            my $got  = $methods->{$key} ? $item->$key() : $item->get( $key );
+            my $got  = $IS_ITEM_METHOD{$key} ? $item->$key() : $item->get( $key );
             unless ( $got =~ $test ) {
                 $unmatch ++;
                 last;
@@ -446,10 +445,9 @@ our @ISA = 'XML::FeedPP::Element';
 sub elements {
     my $self = shift;
     my $args = [ @_ ];
-    my $methods = { map {$_=>1} @XML::FeedPP::ITEM_METHODS };
     while ( my $key = shift @$args ) {
         my $val = shift @$args;
-        if ( $methods->{$key} ) {
+        if ($IS_ITEM_METHOD{$key} ) {
             $self->$key( $val );
         } else {
             $self->set( $key, $val );
