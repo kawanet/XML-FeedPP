@@ -37,7 +37,7 @@ our $MIME_TYPES = { reverse qw(
     image/x-xpixmap                 xpm
 )};
 
-our @FEED_METHODS = qw(
+our %IS_FEED_METHOD = map +($_ => 1), qw(
     title
     description
     language
@@ -375,10 +375,9 @@ sub call {
 sub elements {
     my $self = shift;
     my $args = [ @_ ];
-    my $methods = { map {$_=>1} @FEED_METHODS };
     while ( my $key = shift @$args ) {
         my $val = shift @$args;
-        if ( $methods->{$key} ) {
+        if ( $IS_FEED_METHOD{$key} ) {
             $self->$key( $val );
         } else {
             $self->set( $key, $val );
