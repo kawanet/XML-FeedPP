@@ -60,6 +60,14 @@ our %IS_ITEM_METHOD = map +($_ => 1), qw(
     set
 );
 
+our @IMPLEMENTED_FEEDS = qw(
+   XML::FeedPP::RSS
+   XML::FeedPP::RDF
+   XML::FeedPP::Atom::Atom10
+   XML::FeedPP::Atom::Atom03
+   XML::FeedPP::Atom
+);
+
 sub new {
     my $package = shift;
     my( $init, $source, @rest ) = &XML::FeedPP::Util::param_even_odd(@_);
@@ -97,20 +105,11 @@ sub validate_feed {
 
 sub detect_format {
     my $self = shift;
-    my $list = $self->available_format;
-    foreach my $class ( @$list ) {
+    foreach my $class (@IMPLEMENTED_FEEDS) {
         my $hit = $class->test_feed($self);
         return $class if $hit;
     }
     undef;
-}
-
-sub available_format {
-    [ 'XML::FeedPP::RSS',
-      'XML::FeedPP::RDF',
-      'XML::FeedPP::Atom::Atom10',
-      'XML::FeedPP::Atom::Atom03',
-      'XML::FeedPP::Atom' ];
 }
 
 sub load {
