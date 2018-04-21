@@ -15,14 +15,14 @@ our $XMLNS_RSS    = 'http://purl.org/rss/1.0/';
 our $XMLNS_DC     = 'http://purl.org/dc/elements/1.1/';
 our $XMLNS_ATOM03 = 'http://purl.org/atom/ns#';
 our $XMLNS_ATOM10 = 'http://www.w3.org/2005/Atom';
-our $XMLNS_NOCOPY = [qw( xmlns xmlns:rdf xmlns:dc xmlns:atom )];
+our @XMLNS_NOCOPY = qw( xmlns xmlns:rdf xmlns:dc xmlns:atom );
 
-our $TREEPP_OPTIONS = {
+our %TREEPP_OPTIONS = (
     force_array => [qw( item rdf:li entry )],
     first_out   => [qw( -xmlns:rdf -xmlns -rel -type url title link )],
     last_out    => [qw( description image item items entry -width -height )],
     user_agent  => "XML-FeedPP/$VERSION ",
-};
+);
 
 our $MIME_TYPES = { reverse qw(
     image/bmp                       bmp
@@ -36,7 +36,7 @@ our $MIME_TYPES = { reverse qw(
     image/x-xpixmap                 xpm
 )};
 
-our $FEED_METHODS = [qw(
+our @FEED_METHODS = qw(
     title
     description
     language
@@ -45,9 +45,9 @@ our $FEED_METHODS = [qw(
     pubDate
     image
     set
-)];
+);
 
-our $ITEM_METHODS = [qw(
+our @ITEM_METHODS = qw(
     title
     description
     category
@@ -57,7 +57,7 @@ our $ITEM_METHODS = [qw(
     pubDate
     image
     set
-)];
+);
 
 sub new {
     my $package = shift;
@@ -136,7 +136,7 @@ sub load {
     }
 
     my $opts = { map { $_ => $args->{$_} } grep { ! /^-/ } keys %$args };
-    my $tpp = XML::TreePP->new(%$TREEPP_OPTIONS, %$opts);
+    my $tpp = XML::TreePP->new(%TREEPP_OPTIONS, %$opts);
 
     my $tree;
     if ( $method eq 'url' ) {
@@ -162,7 +162,7 @@ sub to_string {
     my( $args, $encode, @rest ) = XML::FeedPP::Util::param_even_odd(@_);
     $args ||= \@rest;
     my @opts = ( output_encoding => $encode ) if $encode;
-    my $tpp = XML::TreePP->new( %$TREEPP_OPTIONS, @opts, @$args );
+    my $tpp = XML::TreePP->new( %TREEPP_OPTIONS, @opts, @$args );
     $tpp->write( $self, $encode );
 }
 
@@ -172,7 +172,7 @@ sub to_file {
     my( $args, $encode, @rest ) = XML::FeedPP::Util::param_even_odd(@_);
     $args ||= \@rest;
     my @opts = ( output_encoding => $encode ) if $encode;
-    my $tpp = XML::TreePP->new( %$TREEPP_OPTIONS, @opts, @$args );
+    my $tpp = XML::TreePP->new( %TREEPP_OPTIONS, @opts, @$args );
     $tpp->writefile( $file, $self, $encode );
 }
 
@@ -239,7 +239,7 @@ sub merge_common_channel {
 
     my @xmlns1 = $self->xmlns();
     my @xmlns2 = $target->xmlns();
-    my $xmlchk = { map { $_ => 1 } @xmlns1, @$XML::FeedPP::XMLNS_NOCOPY };
+    my $xmlchk = { map { $_ => 1 } @xmlns1, @XML::FeedPP::XMLNS_NOCOPY };
     foreach my $ns (@xmlns2) {
         next if exists $xmlchk->{$ns};
         $self->xmlns( $ns, $target->xmlns($ns) );
@@ -374,7 +374,7 @@ sub call {
 sub elements {
     my $self = shift;
     my $args = [ @_ ];
-    my $methods = { map {$_=>1} @$FEED_METHODS };
+    my $methods = { map {$_=>1} @FEED_METHODS };
     while ( my $key = shift @$args ) {
         my $val = shift @$args;
         if ( $methods->{$key} ) {
@@ -390,7 +390,7 @@ sub match_item {
     my @list = $self->get_item();
     @list or return;
 
-    my $methods = { map {$_=>1} @$ITEM_METHODS };
+    my $methods = { map {$_=>1} @ITEM_METHODS };
     my $args = [ @_ ];
     my $out = [];
     foreach my $item ( @list ) {
@@ -457,7 +457,7 @@ our @ISA = 'XML::FeedPP::Element';
 sub elements {
     my $self = shift;
     my $args = [ @_ ];
-    my $methods = { map {$_=>1} @$XML::FeedPP::ITEM_METHODS };
+    my $methods = { map {$_=>1} @XML::FeedPP::ITEM_METHODS };
     while ( my $key = shift @$args ) {
         my $val = shift @$args;
         if ( $methods->{$key} ) {
