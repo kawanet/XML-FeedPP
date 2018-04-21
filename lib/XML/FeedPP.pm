@@ -77,15 +77,12 @@ sub new {
         if $do_autodetect && !$source;
 
     my $self = bless {}, $package;
-    $self->load($source, @rest) if $source;
+    $self->load($source, @rest)
+        if $source;
 
     if($do_autodetect) {
-        my $class = $self->detect_format;
-        unless ( $class ) {
-            my $root = ref $self ? join( " ", sort keys %$self ) : $self;
-            my $class = ref $self ? ref $self : $self;
-            Carp::croak "Invalid $class feed format: $root";
-        }
+        my $class = $self->detect_format
+            or croak "Unsupported feed format: ". join( " ", sort keys %$self);
         bless $self, $class;
     }
 
@@ -98,9 +95,9 @@ sub new {
 sub validate_feed {
     my $self = shift;
     return if $self->test_feed(@_);
-    my $root = ref $self ? join( " ", sort keys %$self ) : $self;
-    my $class = ref $self ? ref $self : $self;
-    croak "Invalid $class feed format: $root";
+
+    my $class = ref $self;
+    croak "Invalid $class feed format: ".join( " ", sort keys %$self);
 }
 
 sub detect_format {
@@ -466,11 +463,9 @@ sub item_class {
 }
 
 sub test_feed {
-    my $self   = shift;
-    my $source = shift || $self;
-    return unless ref $source;
-    return unless ref $source->{rss};
-    __PACKAGE__;
+    my $thing  = shift;
+    my $source = shift || $thing;
+    ref $source && ref $source->{rss} ? __PACKAGE__ : undef;
 }
 
 sub init_feed {
@@ -738,11 +733,9 @@ sub item_class {
 }
 
 sub test_feed {
-    my $self   = shift;
-    my $source = shift || $self;
-    return unless ref $source;
-    return unless ref $source->{'rdf:RDF'};
-    __PACKAGE__;
+    my $thing  = shift;
+    my $source = shift || $thing;
+    ref $source && ref $source->{'rdf:RDF'} ? __PACKAGE__ : undef;
 }
 
 sub init_feed {
@@ -1193,14 +1186,14 @@ sub item_class {
 }
 
 sub test_feed {
-    my $self   = shift;
-    my $source = shift || $self;
-    return unless ref $source;
-    return unless ref $source->{feed};
-    return unless exists $source->{feed}->{-xmlns};
-    my $xmlns = $source->{feed}->{-xmlns};
-    return if ($xmlns ne $XML::FeedPP::XMLNS_ATOM03);
-    __PACKAGE__;
+    my $thing  = shift;
+    my $source = shift || $thing;
+
+    ref $source && ref $source->{feed}
+		or return;
+
+    my $xmlns = $source->{feed}->{-xmlns} || '';
+    $xmlns eq $XML::FeedPP::XMLNS_ATOM03 ? __PACKAGE__ : undef;
 }
 
 sub init_feed {
@@ -1323,14 +1316,14 @@ sub item_class {
 }
 
 sub test_feed {
-    my $self   = shift;
-    my $source = shift || $self;
-    return unless ref $source;
-    return unless ref $source->{feed};
-    return unless exists $source->{feed}->{-xmlns};
-    my $xmlns = $source->{feed}->{-xmlns};
-    return if ($xmlns ne $XML::FeedPP::XMLNS_ATOM10);
-    __PACKAGE__;
+    my $thing  = shift;
+    my $source = shift || $thing;
+
+    ref $source && ref $source->{feed}
+		or return;
+
+    my $xmlns = $source->{feed}->{-xmlns} || '';
+    $xmlns eq $XML::FeedPP::XMLNS_ATOM10 ? __PACKAGE__ : undef;
 }
 
 sub init_feed {
@@ -1442,14 +1435,10 @@ sub link {
 package XML::FeedPP::Atom;
 our @ISA = 'XML::FeedPP::Atom::Atom03';
 
-# @ISA = qw( XML::FeedPP::Atom::Atom10 );   # if Atom 1.0 for default
-
 sub test_feed {
-    my $self   = shift;
-    my $source = shift || $self;
-    return unless ref $source;
-    return unless ref $source->{feed};
-    __PACKAGE__;
+    my $thing  = shift;
+    my $source = shift || $thing;
+    ref $source && ref $source->{feed} ? __PACKAGE__ : undef;
 }
 
 # ----------------------------------------------------------------
