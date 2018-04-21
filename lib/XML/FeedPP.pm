@@ -388,7 +388,8 @@ sub elements {
 sub match_item {
     my $self = shift;
     my @list = $self->get_item();
-    return unless scalar @list;
+    @list or return;
+
     my $methods = { map {$_=>1} @$ITEM_METHODS };
     my $args = [ @_ ];
     my $out = [];
@@ -604,10 +605,10 @@ sub limit_item {
     my $self  = shift;
     my $limit = shift;
     my $list  = $self->{rss}->{channel}->{item} or return;
-    if ( $limit > 0 && $limit < scalar @$list ) {
+    if ( $limit > 0 && $limit < @$list ) {
         @$list = splice( @$list, 0, $limit );   # remove from end
     }
-    elsif ( $limit < 0 && -$limit < scalar @$list ) {
+    elsif ( $limit < 0 && -$limit < @$list ) {
         @$list = splice( @$list, $limit );      # remove from start
     }
     scalar @$list;
@@ -679,7 +680,7 @@ sub category    { shift->get_set_array( "category", @_ ); }
 
 sub author {
     my $self = shift;
-    if ( scalar @_ ) {
+    if ( @_ ) {
         $self->set_value( 'author', @_ );
     } else {
         $self->get_value('author') || $self->get_value('dc:creator');
@@ -699,10 +700,10 @@ sub guid {
     my $guid = shift;
     return $self->get_value("guid") unless defined $guid;
     my @args = @_;
-    if ( ! scalar @args ) {
+    if ( ! @args ) {
         # default
         @args = ( 'isPermaLink' => 'true' );
-    } elsif ( scalar @args == 1 ) {
+    } elsif ( @args == 1 ) {
         # XML::FeedPP 0.36's behavior
         unshift( @args, 'isPermaLink' );
     }
@@ -790,9 +791,9 @@ sub init_feed {
 
     # http://www.kawa.net/works/perl/feedpp/feedpp.html#com-2008-05-17T13:13:33Z
     if ( UNIVERSAL::isa( $rdfseq, 'ARRAY' ) ) {
-        my $num1 = scalar @$rdfseq;
-        my $num2 = scalar grep { ref $_ && exists $_->{'rdf:li'} && ref $_->{'rdf:li'} } @$rdfseq;
-        my $num3 = scalar grep { ref $_ && keys %$_ == 1 } @$rdfseq;
+        my $num1 = @$rdfseq;
+        my $num2 = grep { ref $_ && exists $_->{'rdf:li'} && ref $_->{'rdf:li'} } @$rdfseq;
+        my $num3 = grep { ref $_ && keys %$_ == 1 } @$rdfseq;
         if ( $num1 && $num1 == $num2 && $num1 == $num3 ) {
             my $newli = [ map { @{$_->{'rdf:li'}} } @$rdfseq ];
             $rdfseq = { 'rdf:li' => $newli };
@@ -923,10 +924,10 @@ sub limit_item {
     my $self  = shift;
     my $limit = shift;
     my $list  = $self->{'rdf:RDF'}->{item} or return;
-    if ( $limit > 0 && $limit < scalar @$list ) {
+    if ( $limit > 0 && $limit < @$list ) {
         @$list = splice( @$list, 0, $limit );   # remove from end
     }
-    elsif ( $limit < 0 && -$limit < scalar @$list ) {
+    elsif ( $limit < 0 && -$limit < @$list ) {
         @$list = splice( @$list, $limit );      # remove from start
     }
     $self->__refresh_items();
@@ -1142,10 +1143,10 @@ sub limit_item {
     my $self  = shift;
     my $limit = shift;
     my $list  = $self->{feed}->{entry} or return;
-    if ( $limit > 0 && $limit < scalar @$list ) {
+    if ( $limit > 0 && $limit < @$list ) {
         @$list = splice( @$list, 0, $limit );   # remove from end
     }
-    elsif ( $limit < 0 && -$limit < scalar @$list ) {
+    elsif ( $limit < 0 && -$limit < @$list ) {
         @$list = splice( @$list, $limit );      # remove from start
     }
     scalar @$list;
@@ -1510,7 +1511,7 @@ sub _fetch_value {
         && exists $value->{'-type'}
         && ($value->{'-type'} eq "xhtml")) {
         my $child = [ grep { /^[^\-\#]/ } keys %$value ];
-        if (scalar @$child == 1) {
+        if (@$child == 1) {
             my $div = shift @$child;
             if ($div =~ /^([^:]+:)?div$/i) {
                 return $value->{$div};
@@ -1721,10 +1722,10 @@ sub title {
 
 sub category {
     my $self = shift;
-    if ( scalar @_ ) {
+    if ( @_ ) {
         my $cate = ref $_[0] ? $_[0] : \@_;
         my $list = [ map {+{-term=>$_}} @$cate ];
-        $self->{category} = ( scalar @$list > 1 ) ? $list : shift @$list;
+        $self->{category} = @$list > 1 ? $list : shift @$list;
     }
     else {
         return unless exists $self->{category};
@@ -1732,7 +1733,7 @@ sub category {
         $list = [ $list ] if ( defined $list && ! UNIVERSAL::isa( $list, 'ARRAY' ));
         my $term = [ map {ref $_ && exists $_->{-term} && $_->{-term} } @$list ];
 #       return wantarray ? @$term : shift @$term;
-        return ( scalar @$term > 1 ) ? $term : shift @$term;
+        return @$term > 1 ? $term : shift @$term;
     }
 }
 
@@ -1757,7 +1758,7 @@ sub ref_bless {
 sub set {
     my $self = shift;
 
-    while ( scalar @_ ) {
+    while ( @_ ) {
         my $key  = shift @_;
         my $val  = shift @_;
         my $node = $self;
@@ -1863,18 +1864,18 @@ sub get_set_array {
     if ( ref $value ) {
         $self->{$elem} = $value;
     } elsif ( defined $value ) {
-        $value = [ $value, @_ ] if scalar @_;
+        $value = [ $value, @_ ] if @_;
         $self->{$elem} = $value;
     } else {
         my @ret = $self->get_value($elem);
-        return scalar @ret > 1 ? \@ret : $ret[0];
+        return @ret > 1 ? \@ret : $ret[0];
     }
 }
 
 sub get_or_set {
     my $self = shift;
     my $elem = shift;
-    return scalar @_
+    return @_
       ? $self->set_value( $elem, @_ )
       : $self->get_value($elem);
 }
@@ -1936,7 +1937,7 @@ sub set_value {
     else {
         $self->{$elem} = $text;
     }
-    $self->set_attr( $elem, @$attr ) if scalar @$attr;
+    $self->set_attr( $elem, @$attr ) if @$attr;
     undef;
 }
 
@@ -1956,7 +1957,7 @@ sub set_attr {
     my $attr = \@_;
     if ( defined $self->{$elem} ) {
         my $scalar = ref $self->{$elem};
-        $scalar = undef if ($scalar eq 'SCALAR');
+        $scalar = undef if $scalar eq 'SCALAR';
         if (! $scalar) {
             $self->{$elem} = { '#text' => $self->{$elem} };
         }
@@ -1964,7 +1965,7 @@ sub set_attr {
     else {
         $self->{$elem} = {};
     }
-    while ( scalar @$attr ) {
+    while ( @$attr ) {
         my $key = shift @$attr;
         my $val = shift @$attr;
         if ( defined $val ) {
@@ -2168,7 +2169,7 @@ sub merge_hash {
 }
 
 sub param_even_odd {
-    if ( (scalar @_) % 2 == 0 ) {
+    if ( @_ % 2 == 0 ) {
         # even num of args - new( key1 => val1, key2 => arg2 );
         my $array = [ @_ ];
         return $array;
