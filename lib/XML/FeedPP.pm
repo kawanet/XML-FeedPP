@@ -1,7 +1,8 @@
 use strict;    # file scoped
 
 package XML::FeedPP;
-use Carp;
+
+use Carp qw(croak);
 use Time::Local;
 use XML::TreePP;
 
@@ -64,7 +65,7 @@ sub new {
     my( $init, $source, @rest ) = &XML::FeedPP::Util::param_even_odd(@_);
     my $do_autodetect = $package eq __PACKAGE__;
 
-    Carp::croak "No feed source"
+    croak "No feed source"
         if $do_autodetect && !$source;
 
     my $self = bless {}, $package;
@@ -91,7 +92,7 @@ sub validate_feed {
     return if $self->test_feed(@_);
     my $root = ref $self ? join( " ", sort keys %$self ) : $self;
     my $class = ref $self ? ref $self : $self;
-    Carp::croak "Invalid $class feed format: $root";
+    croak "Invalid $class feed format: $root";
 }
 
 sub detect_format {
@@ -152,7 +153,7 @@ sub load {
         Carp::croak "Invalid load type: $method";
     }
 
-    Carp::croak "Loading failed: $source" unless ref $tree;
+    croak "Loading failed: $source" unless ref $tree;
     %$self = %$tree;    # override myself
     $self;
 }
@@ -367,7 +368,7 @@ sub call {
     eval {
         require $pmfile;
     } unless defined $class->VERSION;
-    Carp::croak "$class failed: $@" if $@;
+    croak "$class failed: $@" if $@;
     return $class->run( $self, @_ );
 }
 
@@ -413,28 +414,16 @@ sub match_item {
     @$out;
 }
 
-sub channel_class { Carp::croak((ref $_[0])."->channel_class() is not implemented"); }
-sub item_class { Carp::croak((ref $_[0])."->item_class() is not implemented"); }
-sub test_feed { Carp::croak((ref $_[0])."->test_feed() is not implemented"); }
-sub init_feed { Carp::croak((ref $_[0])."->init_feed() is not implemented"); }
-sub add_item { Carp::croak((ref $_[0])."->add_item() is not implemented"); }
-sub clear_item { Carp::croak((ref $_[0])."->clear_item() is not implemented"); }
-sub remove_item { Carp::croak((ref $_[0])."->remove_item() is not implemented"); }
-sub get_item { Carp::croak((ref $_[0])."->get_item() is not implemented"); }
-sub sort_item { Carp::croak((ref $_[0])."->sort_item() is not implemented"); }
-sub uniq_item { Carp::croak((ref $_[0])."->uniq_item() is not implemented"); }
-sub limit_item { Carp::croak((ref $_[0])."->limit_item() is not implemented"); }
-sub docroot { Carp::croak((ref $_[0])."->docroot() is not implemented"); }
-sub channel { Carp::croak((ref $_[0])."->channel() is not implemented"); }
-sub set { Carp::croak((ref $_[0])."->set() is not implemented"); }
-sub get { Carp::croak((ref $_[0])."->get() is not implemented"); }
-sub title { Carp::croak((ref $_[0])."->title() is not implemented"); }
-sub description { Carp::croak((ref $_[0])."->description() is not implemented"); }
-sub link { Carp::croak((ref $_[0])."->link() is not implemented"); }
-sub language { Carp::croak((ref $_[0])."->language() is not implemented"); }
-sub copyright { Carp::croak((ref $_[0])."->copyright() is not implemented"); }
-sub pubDate { Carp::croak((ref $_[0])."->pubDate() is not implemented"); }
-sub image { Carp::croak((ref $_[0])."->image() is not implemented"); }
+BEGIN {
+    no strict 'refs';
+    # die on methods which did not get extended by the specific feed
+    foreach my $stub (qw/ add_item channel channel_class clear_item copyright xyz
+        description docroot get get_item image init_feed item_class language
+        limit_item link pubDate remove_item set sort_item test_feed title uniq_item
+        / ) {
+        *$stub = sub { croak +(ref $_[0])."->$stub() is not available" }
+    }
+}
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Plugin;
