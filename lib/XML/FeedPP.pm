@@ -5,6 +5,7 @@ package XML::FeedPP;
 use Carp qw(croak);
 use Time::Local;
 use XML::TreePP;
+use Scalar::Util qw(reftype);
 
 our $VERSION = '0.96';
 
@@ -436,6 +437,8 @@ sub elements {
 package XML::FeedPP::RSS;
 our @ISA = 'XML::FeedPP';
 
+use Scalar::Util qw(reftype);
+
 sub channel_class {
     'XML::FeedPP::RSS::Channel';
 }
@@ -454,7 +457,7 @@ sub init_feed {
     my $self = shift or return;
 
     my $rss = $self->{rss} ||= {};
-    UNIVERSAL::isa($rss, 'HASH')
+    reftype $rss eq 'HASH'
         or Carp::croak "Invalid RSS 2.0 feed format: $rss";
 
     $rss->{-version} ||= $XML::FeedPP::RSS20_VERSION;
@@ -464,7 +467,7 @@ sub init_feed {
 
     my $items = $channel->{item} || [];
     my @items = grep ref $_,    # skip empty items
-        UNIVERSAL::isa($items, 'HASH') ? $items : @$items;
+        reftype $items eq 'HASH' ? $items : @$items;
 
     $self->item_class->ref_bless($_) for @items;
     $channel->{item} = \@items;
@@ -689,6 +692,8 @@ sub image {
 package XML::FeedPP::RDF;
 our @ISA = 'XML::FeedPP';
 
+use Scalar::Util qw(reftype);
+
 sub channel_class {
     'XML::FeedPP::RDF::Channel';
 }
@@ -707,9 +712,9 @@ sub init_feed {
     my $self = shift or return;
 
     $self->{'rdf:RDF'} ||= {};
-    if ( ! UNIVERSAL::isa( $self->{'rdf:RDF'}, 'HASH' ) ) {
-        Carp::croak "Invalid RDF 1.0 feed format: $self->{'rdf:RDF'}";
-    }
+    reftype $self->{'rdf:RDF'} eq 'HASH'
+        or Carp::croak "Invalid RDF 1.0 feed format: $self->{'rdf:RDF'}";
+
     $self->xmlns('xmlns'     => $XML::FeedPP::XMLNS_RSS );
     $self->xmlns('xmlns:rdf' => $XML::FeedPP::XMLNS_RDF );
     $self->xmlns('xmlns:dc'  => $XML::FeedPP::XMLNS_DC );
@@ -721,7 +726,7 @@ sub init_feed {
     my $rdfseq  = $items->{'rdf:Seq'} ||= {};
 
     # http://www.kawa.net/works/perl/feedpp/feedpp.html#com-2008-05-17T13:13:33Z
-    if ( UNIVERSAL::isa($rdfseq, 'ARRAY') ) {
+    if (reftype $rdfseq eq 'ARRAY') {
         my $num1 = @$rdfseq;
         my $num2 = grep ref $_ && ref $_->{'rdf:li'}, @$rdfseq;
         my $num3 = grep ref $_ && keys %$_ == 1, @$rdfseq;
@@ -733,11 +738,11 @@ sub init_feed {
 
     my $li = $rdfseq->{'rdf:li'} ||= [];
     $rdfseq->{'rdf:li'} = [ $li ]
-        if UNIVERSAL::isa($li, 'HASH');
+        if reftype $li eq 'HASH';
 
     my $top_items = $self->{'rdf:RDF'}{item} ||= [];
     $top_items = $self->{'rdf:RDF'}{item} = [ $top_items ]
-        if UNIVERSAL::isa($top_items, 'HASH');
+        if reftype $top_items eq 'HASH';
 
     $self->item_class->ref_bless($_) for @$top_items;
     $self;
@@ -961,6 +966,8 @@ sub get_pubDate_native {
 package XML::FeedPP::Atom::Common;
 our @ISA = 'XML::FeedPP';
 
+use Scalar::Util qw(reftype);
+
 sub merge_native_channel {
     my $self = shift;
     my $tree = shift or return;
@@ -1060,8 +1067,8 @@ sub language {
 sub image {
     my ($self, $href, $title) = @_;
 
-    my $link = $self->{feed}{link} || [];
-    my @links = UNIVERSAL::isa($link, 'HASH') ? $link : @$link;
+    my $link   = $self->{feed}{link} || [];
+    my @links  = reftype $link eq 'HASH' ? $link : @$link;
     (my $icon) = grep ref $_ && defined $_->{-rel} && $_->{-rel} eq 'icon',
         @links;
 
@@ -1085,7 +1092,7 @@ sub image {
             $newicon{-title} = $title if $title;
 
             my $flink = $self->{feed}{link} ||= [];
-            if ( UNIVERSAL::isa( $flink, 'HASH' )) {
+            if (reftype $flink eq 'HASH') {
                 $self->{feed}{link} = [ $flink, \%newicon ];
             }
             else {
@@ -1106,6 +1113,8 @@ sub image {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom03;
 our @ISA = 'XML::FeedPP::Atom::Common';
+
+use Scalar::Util  qw(reftype);
 
 sub channel_class {
     'XML::FeedPP::Atom::Atom03::Feed';
@@ -1130,7 +1139,7 @@ sub init_feed {
     my $self = shift or return;
 
     my $feed = $self->{feed} ||= $self->channel_class->new;
-    UNIVERSAL::isa($feed, 'HASH')
+    reftype $feed eq 'HASH'
         or Carp::croak "Invalid Atom 0.3 feed format: $feed";
 
     $self->channel_class->ref_bless($feed);
@@ -1138,8 +1147,7 @@ sub init_feed {
     $feed->{-version} ||= $XML::FeedPP::ATOM03_VERSION;
 
     my $items = $feed->{entry} ||= [];
-    if ( UNIVERSAL::isa($items,  'HASH' ) ) {
-        # if this feed has only one item
+    if (reftype $items eq 'HASH') {
         $items = $feed->{entry} = [ $items ];
     }
     $self->item_class->ref_bless($_) for @$items;
@@ -1190,7 +1198,7 @@ sub link {
     my ($self, $href) = @_;
 
     my $link = $self->{feed}->{link} || [];
-    $link = [ $link ] if UNIVERSAL::isa( $link, 'HASH' );
+    $link = [ $link ] if reftype $link eq 'HASH';
     $link = [ grep ref $_, @$link ];
     $link = [ grep {
         ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
@@ -1211,7 +1219,7 @@ sub link {
                 -href   =>  $href,
             };
             my $flink = $self->{feed}->{link} ||= [];
-            if ( UNIVERSAL::isa( $flink, 'HASH' )) {
+            if (reftype $flink eq 'HASH') {
                 $self->{feed}{link} = [ $flink, $hash ];
             }
             else {
@@ -1227,6 +1235,8 @@ sub link {
 # ----------------------------------------------------------------
 package XML::FeedPP::Atom::Atom10;
 our @ISA = 'XML::FeedPP::Atom::Common';
+
+use Scalar::Util  qw(reftype);
 
 sub channel_class {
     'XML::FeedPP::Atom::Atom10::Feed';
@@ -1251,7 +1261,7 @@ sub init_feed {
     my $self = shift or return;
 
     my $feed = $self->{feed} ||= $self->channel_class->new;
-    UNIVERSAL::isa($feed, 'HASH')
+    reftype $feed eq 'HASH'
         or Carp::croak "Invalid Atom 1.0 feed format: $feed";
 
     $self->channel_class->ref_bless($feed);
@@ -1259,7 +1269,7 @@ sub init_feed {
 #   $feed->{-version} ||= $XML::FeedPP::ATOM10_VERSION;
 
     my $items = $feed->{entry} ||= [];
-    if ( UNIVERSAL::isa($items, 'HASH' ) ) {
+    if (reftype $items eq 'HASH') {
         $items = $feed->{entry} = [ $items ];
     }
     $self->item_class->ref_bless($_) for @$items;;
@@ -1313,7 +1323,7 @@ sub link {
     my $href = shift;
 
     my $link = $self->{feed}->{link} || [];
-    $link = [$link] if UNIVERSAL::isa( $link, 'HASH' );
+    $link = [$link] if reftype $link eq 'HASH';
     $link = [ grep { ref $_ } @$link ];
     $link = [ grep {
         ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
@@ -1330,7 +1340,7 @@ sub link {
                 -href   =>  $href,
             };
             my $flink = $self->{feed}{link} ||= [];
-            if ( UNIVERSAL::isa( $flink, 'HASH' )) {
+            if (reftype $flink eq 'HASH') {
                 $self->{feed}{link} = [ $flink, $hash ];
             }
             else {
@@ -1357,6 +1367,8 @@ sub test_feed {
 package XML::FeedPP::Atom::Common::Feed;
 our @ISA = 'XML::FeedPP::Element';
 
+use Scalar::Util  qw(reftype);
+
 # <content type="xhtml"><div>...</div></content>
 # http://www.ietf.org/rfc/rfc4287.txt
 # 3. If the value of "type" is "xhtml", the content of atom:content
@@ -1368,7 +1380,7 @@ sub _fetch_value {
     my $self  = shift;
     my $value = shift;
 
-    if ( UNIVERSAL::isa( $value, 'HASH' )
+    if (reftype $value eq 'HASH'
         && exists $value->{'-type'}
         && ($value->{'-type'} eq "xhtml")) {
         my $child = [ grep { /^[^\-\#]/ } keys %$value ];
@@ -1413,6 +1425,8 @@ sub guid { shift->get_or_set( 'id', @_ ); }
 package XML::FeedPP::Atom::Atom03::Entry;
 our @ISA = 'XML::FeedPP::Atom::Common::Entry';
 
+use Scalar::Util  qw(reftype);
+
 sub description {
     my ($self, $descr) = @_;
     defined $descr
@@ -1429,7 +1443,7 @@ sub link {
     my ($self, $href) = @_;
 
     my $link = $self->{link} || [];
-    $link = [$link] if UNIVERSAL::isa( $link, 'HASH' );
+    $link = [$link] if reftype $link eq 'HASH';
     $link = [ grep { ref $_ } @$link ];
     $link = [ grep {
         ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
@@ -1451,7 +1465,7 @@ sub link {
             };
 
             my $flink = $self->{link} ||= [];
-            if ( ref $flink && UNIVERSAL::isa( $flink, 'HASH' )) {
+            if (reftype $flink eq 'HASH') {
                 $self->{link} = [ $flink, $hash ];
             }
             else {
@@ -1497,6 +1511,8 @@ sub category { undef }    # this element is NOT supported for Atom 0.3
 package XML::FeedPP::Atom::Atom10::Entry;
 our @ISA = 'XML::FeedPP::Atom::Common::Entry';
 
+use Scalar::Util  qw(reftype);
+
 sub description {
     my ($self, $descr) = @_;
     defined $descr
@@ -1509,7 +1525,7 @@ sub link {
     my ($self, $href) = @_;
 
     my $link  = $self->{link} || [];
-    my @links = UNIVERSAL::isa($link, 'HASH') ? $link : @$link;
+    my @links = reftype $link eq 'HASH' ? $link : @$link;
     (my $html) = grep ! exists $_->{-rel} || $_->{-rel} eq 'alternate',
         grep ref, @links;
 
@@ -1520,7 +1536,7 @@ sub link {
         else { # Add
             my $add   = { -href   =>  $href };
             my $flink = $self->{link} ||= [];
-            if (UNIVERSAL::isa($flink, 'HASH')) {
+            if (reftype $flink eq 'HASH') {
                 $self->{link} = [ $flink, $add ];
             }
             else {
@@ -1576,7 +1592,7 @@ sub category {
         or return;
 
      my $list = $self->{category} || [];
-     my @list = UNIVERSAL::isa($list, 'ARRAY') ? @$list : $list;
+     my @list = reftype $list eq 'ARRAY' ? @$list : $list;
      my @term = map { ref $_ && $_->{-term} } @list;
 
      #XXX inconsequent: all other method return list in LIST context
@@ -1585,6 +1601,8 @@ sub category {
 
 # ----------------------------------------------------------------
 package XML::FeedPP::Element;
+
+use Scalar::Util  qw(reftype);
 
 sub new {
     my $class = shift;
@@ -1621,8 +1639,7 @@ sub set {
             $node->{"-$attr"} = $val;
         }
         elsif ( defined $attr ) {
-            if ( ref $node->{$tagname} &&
-                 UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+            if (reftype $node->{$tagname} eq 'ARRAY') {
                 $node->{$tagname} = shift @{$node->{$tagname}};
             }
             my $hkey = "-$attr";
@@ -1640,8 +1657,7 @@ sub set {
             }
         }
         elsif ( defined $tagname ) {
-            if ( ref $node->{$tagname} &&
-                 UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+            if (reftype $node->{$tagname} eq 'ARRAY') {
                 $node->{$tagname} = shift @{$node->{$tagname}};
             }
             if ( ref $node->{$tagname} ) {
@@ -1675,7 +1691,7 @@ sub get {
     if ( defined $attr ) {                   # node@attribute
         ref $node->{$tagname} or return;
         my $hkey = "-$attr";
-        if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+        if (reftype $node->{$tagname} eq 'ARRAY') {
             my @list = map { ref $_ ? $_->{$hkey} : undef } @{$node->{$tagname}};
             return @list if wantarray;
             return ( grep defined, @list )[0];
@@ -1686,7 +1702,7 @@ sub get {
     ref $node->{$tagname}
         or return $node->{$tagname};
 
-    if ( UNIVERSAL::isa( $node->{$tagname}, 'ARRAY' )) {
+    if (reftype $node->{$tagname} eq 'ARRAY') {
          my @list = map { ref $_ ? $_->{'#text'} : $_ } @{$node->{$tagname}};
          return @list if wantarray;
          return (grep defined, @list)[0];
@@ -1732,7 +1748,7 @@ sub get_value {
     ref $value or return $value;
 
     # multiple elements
-    if(UNIVERSAL::isa( $value, 'ARRAY')) {
+    if(reftype $value eq 'ARRAY') {
         return map $self->_fetch_value($_), @$value
             if wantarray;
 
@@ -1746,14 +1762,14 @@ sub _fetch_value {
     my $self  = shift;
     my $value = shift;
 
-    if ( UNIVERSAL::isa( $value, 'HASH' )) {
+    if (reftype $value eq 'HASH') {
         # text node of an element with attributes
         return defined $value->{'#text'}
           ? $self->_fetch_value($value->{'#text'})
           : '';
     }
 
-    if ( UNIVERSAL::isa( $value, 'SCALAR' )) {
+    if (reftype $value eq 'SCALAR') {
         # CDATA section as a scalar reference
         return $$value;
     }
@@ -1763,8 +1779,9 @@ sub _fetch_value {
 
 sub set_value {
     my ($self, $elem, $text, @attr) = @_;
+
     my $node = $self->{$elem};
-    if (UNIVERSAL::isa($node, 'HASH')) {
+    if (reftype $node eq 'HASH') {
         $node->{'#text'} = $text;
     }
     else {
