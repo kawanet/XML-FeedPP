@@ -976,7 +976,7 @@ sub merge_native_channel {
 
 sub add_item {
     my $self = shift;
-    my ($init, $link, @rest) = &XML::FeedPP::Util::param_even_odd(@_);
+    my ($init, $link, @rest) = XML::FeedPP::Util::param_even_odd(@_);
 
     ref $init || $link
          or Carp::croak "add_item needs an argument";
@@ -1881,7 +1881,7 @@ sub rfc1123_to_w3cdtf {
 
     $mon = $MoY{ uc($mon) } or return;
     if ( defined $tz && $tz ne '' && $tz ne 'GMT' ) {
-        my $off = &get_tz_offset($tz) / 60;
+        my $off = get_tz_offset($tz) / 60;
         $tz = sprintf( '%+03d:%02d', $off/60, $off%60 );
     }
     else {
@@ -1905,7 +1905,7 @@ sub w3cdtf_to_rfc1123 {
 
     my $wday = ( gmtime($epoch) )[6];
     if ( defined $tz && $tz ne '' && $tz ne 'Z' ) {
-        my $off = &get_tz_offset($tz) / 60;
+        my $off = get_tz_offset($tz) / 60;
         $tz = sprintf( '%+03d%02d', $off/60, $off%60 );
     }
     else {
@@ -1928,7 +1928,7 @@ sub rfc1123_to_epoch {
 
     my $epoch = eval { Time::Local::timegm($sec, $min, $hour, $mday, $mon-1, $year) }
         or return;
-    $epoch -= &get_tz_offset( $tz );
+    $epoch -= get_tz_offset( $tz );
     $epoch;
 }
 
@@ -1945,7 +1945,7 @@ sub w3cdtf_to_epoch {
     my $epoch = eval { Time::Local::timegm($sec, $min, $hour, $mday, $mon-1, $year) }
         or return;
 
-    $epoch -= &get_tz_offset( $tz );
+    $epoch -= get_tz_offset( $tz );
     $epoch;
 }
 
@@ -1968,8 +1968,8 @@ sub get_w3cdtf {
     my $date = shift;
     defined $date or return;
 
-      $date =~ /^[0-9]+$/s     ? &epoch_to_w3cdtf($date)
-    : $date =~ $rfc1123_regexp ? &rfc1123_to_w3cdtf($date)
+      $date =~ /^[0-9]+$/s     ? epoch_to_w3cdtf($date)
+    : $date =~ $rfc1123_regexp ? rfc1123_to_w3cdtf($date)
     : $date =~ $w3cdtf_regexp  ? $date
     : undef;
 }
@@ -1978,9 +1978,9 @@ sub get_rfc1123 {
     my $date = shift;
     defined $date or return;
 
-      $date =~ /^\d+$/s        ? &epoch_to_rfc1123($date)
+      $date =~ /^\d+$/s        ? epoch_to_rfc1123($date)
     : $date =~ $rfc1123_regexp ? $date
-    : $date =~ $w3cdtf_regexp  ? &w3cdtf_to_rfc1123($date)
+    : $date =~ $w3cdtf_regexp  ? w3cdtf_to_rfc1123($date)
     : undef;
 }
 
@@ -1989,8 +1989,8 @@ sub get_epoch {
     defined $date or return;
 
       $date =~ /^\d+$/s ? $date
-    : $date =~ $rfc1123_regexp  ? &rfc1123_to_epoch($date)
-    : $date =~ $w3cdtf_regexp   ? &w3cdtf_to_epoch($date)
+    : $date =~ $rfc1123_regexp  ? rfc1123_to_epoch($date)
+    : $date =~ $w3cdtf_regexp   ? w3cdtf_to_epoch($date)
     : undef;
 }
 
