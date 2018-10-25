@@ -1,6 +1,8 @@
 === version history of XML::FeedPP
 
 version 0.96:
+	Fixes:
+	- distribution NAME must be a package name (inside the distro)
 
 version 0.95: Sat 21 Apr 01:15:08 CEST 2018
     * fixed #35061: use guid for uniqueness, when available.

@@ -4,12 +4,13 @@ use strict;
 use warnings;
 
 WriteMakefile(
-    NAME         => 'XML-FeedPP',
+    NAME         => 'XML::FeedPP',
     VERSION_FROM => 'lib/XML/FeedPP.pm',
     PREREQ_PM    => {
-        'Test::More'   => '0',
-        'XML::TreePP'  => '0.39',
+        'Test::More'   => 0,
+        'XML::TreePP'  => 0.39,
         'Scalar::Util' => 0,
+        'List::Util'   => 0,
     },
     LICENSE      => 'perl_5',
 
