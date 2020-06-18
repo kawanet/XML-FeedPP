@@ -71,7 +71,7 @@ our @IMPLEMENTED_FEEDS = qw(
 
 sub new {
     my $package = shift;
-    my( $init, $source, @rest ) = &XML::FeedPP::Util::param_even_odd(@_);
+    my ($init, $source, @rest) = &XML::FeedPP::Util::param_even_odd(@_);
     my $do_autodetect = $package eq __PACKAGE__;
 
     croak "No feed source"
@@ -116,14 +116,14 @@ sub load {
 
     my $method = $args{-type};
     if ( ! $method ) {
-        if ( $source =~ m#^https?://#s ) {
+        if($source =~ m#^https?://#s) {
             $method = 'url';
         }
-        elsif ( $source =~ m#(?:\s*\xEF\xBB\xBF)?\s*
+        elsif($source =~ m#(?:\s*\xEF\xBB\xBF)?\s*
                              (<(\?xml|!DOCTYPE|rdf:RDF|rss|feed)\W)#xis ) {
             $method = 'string';
         }
-        elsif ( $source !~ /[\r\n]/ && -f $source ) {
+        elsif($source !~ /[\r\n]/ && -f $source) {
             $method = 'file';
         }
         else {
@@ -147,11 +147,12 @@ sub load {
 
 sub to_string {
     my $self = shift;
-    my( $args, $encode, @rest ) = XML::FeedPP::Util::param_even_odd(@_);
+    my ($args, $encode, @rest) = XML::FeedPP::Util::param_even_odd(@_);
     $args ||= \@rest;
-    my @opts = ( output_encoding => $encode ) if $encode;
+
+    my @opts = (output_encoding => $encode) if $encode;
     my $tpp = XML::TreePP->new( %TREEPP_OPTIONS, @opts, @$args );
-    $tpp->write( $self, $encode );
+    $tpp->write($self, $encode);
 }
 
 sub to_file {
@@ -159,14 +160,14 @@ sub to_file {
     my $file = shift;
     my( $args, $encode, @rest ) = XML::FeedPP::Util::param_even_odd(@_);
     $args ||= \@rest;
-    my @opts = ( output_encoding => $encode ) if $encode;
-    my $tpp = XML::TreePP->new( %TREEPP_OPTIONS, @opts, @$args );
-    $tpp->writefile( $file, $self, $encode );
+    my @opts = (output_encoding => $encode) if $encode;
+    my $tpp = XML::TreePP->new(%TREEPP_OPTIONS, @opts, @$args);
+    $tpp->writefile($file, $self, $encode);
 }
 
 sub merge {
-    my ($self, $source) = (shift, shift);
-    my $target = ref $source ? $source : XML::FeedPP->new($source, @_);
+    my ($self, $source, @config) = @_;
+    my $target = ref $source ? $source : XML::FeedPP->new($source, @config);
 
     $self->merge_channel($target);
     $self->merge_item($target);
@@ -313,10 +314,8 @@ sub xmlns {
     my ($self, $ns, $url) = @_;
     my $root = $self->docroot;
 
-    if ( !defined $ns ) {
-        my @list = grep /^-xmlns(:\S|$)/, keys %$root;
-        return map { (/^-(.*)$/)[0] } @list;
-    }
+    defined $ns
+        or return map { /^-(xmlns.*)$/ ? $1 : () } keys %$root;
 
     $root->{"-$ns"} = $url if defined $url;
     $root->{"-$ns"};
@@ -341,7 +340,7 @@ sub get_pubDate_epoch {
 }
 
 sub call {
-    my ($self, $name) = (shift, shift);
+    my ($self, $name, @param) = @_;
 
     my $class = __PACKAGE__."::Plugin::".$name;
     unless($class->VERSION) {
@@ -353,7 +352,7 @@ sub call {
         croak "$class failed: $@" if $@;
     }
 
-    return $class->run($self, @_);
+    $class->run($self, @param);
 }
 
 sub elements {
@@ -374,8 +373,9 @@ sub match_item {
 
     my @out;
     foreach my $item ($self->get_item) {
-        my @args = @_;
+        my @args   = @_;
         my $unmatch = 0;
+
         while(@args) {
             my ($key, $test) = (shift @args, shift @args);
             my $got  = $IS_ITEM_METHOD{$key} ? $item->$key : $item->get($key);
@@ -384,7 +384,8 @@ sub match_item {
                 last;
             }
         }
-        unless ( $unmatch ) {
+
+        unless($unmatch) {
             return $item unless wantarray;
             push @out, $item;
         }
@@ -395,11 +396,12 @@ sub match_item {
 BEGIN {
     no strict 'refs';
     # die on methods which did not get extended by the specific feed
-    foreach my $stub (qw/ add_item channel channel_class clear_item copyright xyz
-        description docroot get get_item image init_feed item_class language
-        limit_item link pubDate remove_item set sort_item test_feed title uniq_item
+    foreach my $stub (qw/ add_item channel channel_class clear_item copyright
+        xyz description docroot get get_item image init_feed item_class
+        language limit_item link pubDate remove_item set sort_item test_feed
+        title uniq_item
         / ) {
-        *$stub = sub { croak +(ref $_[0])."->$stub() is not available" }
+        *$stub = sub { croak +(ref $_[0])."->$stub() is not available on ", caller() }
     }
 }
 
@@ -437,15 +439,10 @@ sub elements {
 package XML::FeedPP::RSS;
 our @ISA = 'XML::FeedPP';
 
-use Scalar::Util qw(reftype);
+use Scalar::Util qw(reftype blessed);
 
-sub channel_class {
-    'XML::FeedPP::RSS::Channel';
-}
-
-sub item_class {
-    'XML::FeedPP::RSS::Item';
-}
+sub channel_class { 'XML::FeedPP::RSS::Channel' }
+sub item_class    { 'XML::FeedPP::RSS::Item' }
 
 sub test_feed {
     my $thing  = shift;
@@ -463,13 +460,13 @@ sub init_feed {
     $rss->{-version} ||= $XML::FeedPP::RSS20_VERSION;
 
     my $channel = $rss->{channel} ||= $self->channel_class->new;
-    $self->channel_class->ref_bless($channel);
+    blessed $channel or bless $channel, $self->channel_class;
 
     my $items = $channel->{item} || [];
     my @items = grep ref $_,    # skip empty items
         reftype $items eq 'HASH' ? $items : @$items;
 
-    $self->item_class->ref_bless($_) for @items;
+    bless $_, $self->item_class for grep !blessed($_), @items;
     $channel->{item} = \@items;
 
     $self;
@@ -510,7 +507,7 @@ sub remove_item {
     my $list   = $self->channel->{item} or return;
 
     my @deleted;
-    if ( $remove =~ /^-?\d+/ ) {
+    if($remove =~ /^-?\d+/) {
         @deleted = splice @$list, $remove, 1;
     }
     else {
@@ -553,10 +550,11 @@ sub limit_item {
     my $self  = shift;
     my $limit = shift;
     my $list  = $self->channel->{item} or return;
-    if ( $limit > 0 && $limit < @$list ) {
+
+    if($limit > 0 && $limit < @$list) {
         @$list = splice @$list, 0, $limit;   # remove from end
     }
-    elsif ( $limit < 0 && -$limit < @$list ) {
+    elsif($limit < 0 && -$limit < @$list) {
         @$list = splice @$list, $limit;      # remove from start
     }
     scalar @$list;
@@ -692,15 +690,19 @@ sub image {
 package XML::FeedPP::RDF;
 our @ISA = 'XML::FeedPP';
 
-use Scalar::Util qw(reftype);
+use Scalar::Util qw(reftype blessed);
 
-sub channel_class {
-    'XML::FeedPP::RDF::Channel';
-}
+sub channel_class { 'XML::FeedPP::RDF::Channel' }
+sub item_class    { 'XML::FeedPP::RDF::Item' }
 
-sub item_class {
-    'XML::FeedPP::RDF::Item';
-}
+sub docroot     { shift->{'rdf:RDF'}; }
+sub channel     { shift->docroot->{channel} ||= {} }
+sub set         { shift->channel->set(@_); }
+sub get         { shift->channel->get(@_); }
+sub title       { shift->channel->get_or_set(title         => @_ ) }
+sub description { shift->channel->get_or_set(description   => @_ ) }
+sub language    { shift->channel->get_or_set('dc:language' => @_ ) }
+sub copyright   { shift->channel->get_or_set('dc:rights'   => @_ ) }
 
 sub test_feed {
     my $thing  = shift;
@@ -715,12 +717,12 @@ sub init_feed {
     reftype $self->{'rdf:RDF'} eq 'HASH'
         or Carp::croak "Invalid RDF 1.0 feed format: $self->{'rdf:RDF'}";
 
-    $self->xmlns('xmlns'     => $XML::FeedPP::XMLNS_RSS );
-    $self->xmlns('xmlns:rdf' => $XML::FeedPP::XMLNS_RDF );
+    $self->xmlns('xmlns'     => $XML::FeedPP::XMLNS_RSS);
+    $self->xmlns('xmlns:rdf' => $XML::FeedPP::XMLNS_RDF);
     $self->xmlns('xmlns:dc'  => $XML::FeedPP::XMLNS_DC );
 
-    my $channel = $self->{'rdf:RDF'}->{channel} ||= $self->channel_class->new;
-    $self->channel_class->ref_bless($channel);
+    my $channel = $self->docroot->{channel} ||= $self->channel_class->new;
+    blessed $channel or bless $channel, $self->channel_class;
 
     my $items   = $channel->{items}   ||= {};
     my $rdfseq  = $items->{'rdf:Seq'} ||= {};
@@ -740,11 +742,11 @@ sub init_feed {
     $rdfseq->{'rdf:li'} = [ $li ]
         if reftype $li eq 'HASH';
 
-    my $top_items = $self->{'rdf:RDF'}{item} ||= [];
-    $top_items = $self->{'rdf:RDF'}{item} = [ $top_items ]
+    my $top_items = $self->docroot->{item} ||= [];
+    $top_items = $self->docroot->{item} = [ $top_items ]
         if reftype $top_items eq 'HASH';
 
-    $self->item_class->ref_bless($_) for @$top_items;
+    bless $_, $self->item_class for grep !blessed($_), @$top_items;
     $self;
 }
 
@@ -752,10 +754,9 @@ sub merge_native_channel {
     my $self = shift;
     my $tree = shift or return;
 
-    my $rdf1 = $self->{'rdf:RDF'};
     my $rdf2 = $tree->{'rdf:RDF'};
-    XML::FeedPP::Util::merge_hash($rdf1, $rdf2, qw(channel item));
-    XML::FeedPP::Util::merge_hash($rdf1->{channel}, $rdf2->{channel}, 'items');
+    XML::FeedPP::Util::merge_hash($self->docroot, $rdf2, qw(channel item));
+    XML::FeedPP::Util::merge_hash($self->channel, $rdf2->{channel}, 'items');
 }
 
 sub add_item {
@@ -765,9 +766,8 @@ sub add_item {
     ref $init || $link
         or Carp::croak "add_item needs an argument";
 
-    if ( ref $link ) {
-        return $self->add_clone_item( $link );
-    }
+    return $self->add_clone_item($link)
+        if ref $link;
 
     my $rdfli = $self->item_class->new;
     $rdfli->{'-rdf:resource'} = $link;
@@ -777,20 +777,20 @@ sub add_item {
     my $item = XML::FeedPP::RDF::Item->new(@rest);
     $item->link($link) if $link;
     $item->elements(@$init) if ref $init;
-    push @{ $self->{'rdf:RDF'}->{item} }, $item;
+    push @{$self->docroot->{item} }, $item;
 
     $item;
 }
 
 sub clear_item {
     my $self = shift;
-    $self->{'rdf:RDF'}->{item} = [];
+    $self->docroot->{item} = [];
     $self->__refresh_items;
 }
 
 sub remove_item {
     my ($self, $remove) = @_;
-    my $list   = $self->{'rdf:RDF'}->{item} or return;
+    my $list   = $self->docroot->{item} or return;
 
     my @deleted;
     if ( $remove =~ /^-?\d+/ ) {
@@ -807,13 +807,13 @@ sub remove_item {
 
 sub get_item {
     my ($self, $num) = @_;
-    my $items = $self->{'rdf:RDF'}->{item} ||= [];
+    my $items = $self->docroot->{item} || [];
     defined $num ? $items->[$num] : @$items;
 }
 
 sub sort_item {
     my $self = shift;
-    my $list = $self->{'rdf:RDF'}->{item} or return;
+    my $list = $self->docroot->{item} or return;
 
     my @epoch  = map { $_->get_pubDate_epoch() || 0 } @$list;
     my @sorted = map $list->[$_], sort { $epoch[$b] <=> $epoch[$a] } 0 .. $#$list;
@@ -823,21 +823,21 @@ sub sort_item {
 
 sub uniq_item {
     my $self  = shift;
-    my $list  = $self->{'rdf:RDF'}->{item} or return;
+    my $list  = $self->docroot->{item} or return;
 
     my (%check, @uniq);
     foreach my $item (@$list) {
         my $link = $item->link;
         push @uniq, $item unless $check{$link}++;
     }
-    $self->{'rdf:RDF'}->{item} = \@uniq;
+    $self->docroot->{item} = \@uniq;
     $self->__refresh_items;
 }
 
 sub limit_item {
     my $self  = shift;
     my $limit = shift;
-    my $list  = $self->{'rdf:RDF'}->{item} or return;
+    my $list  = $self->docroot->{item} or return;
     if ( $limit > 0 && $limit < @$list ) {
         @$list = splice @$list, 0, $limit;   # remove from end
     }
@@ -849,7 +849,7 @@ sub limit_item {
 
 sub __refresh_items {
     my $self = shift;
-    my $list = $self->{'rdf:RDF'}{item} or return;
+    my $list = $self->docroot->{item} or return;
 
     my $dest = $self->channel->{items}{'rdf:Seq'}{'rdf:li'} = [];
     foreach my $item (@$list) {
@@ -860,24 +860,15 @@ sub __refresh_items {
     scalar @$dest;
 }
 
-sub docroot     { shift->{'rdf:RDF'}; }
-sub channel     { shift->docroot->{channel} }
-sub set         { shift->channel->set(@_); }
-sub get         { shift->channel->get(@_); }
-sub title       { shift->channel->get_or_set(title         => @_ ) }
-sub description { shift->channel->get_or_set(description   => @_ ) }
-sub language    { shift->channel->get_or_set('dc:language' => @_ ) }
-sub copyright   { shift->channel->get_or_set('dc:rights'   => @_ ) }
-
 sub link {
-    my ($self, $link) = (shift, shift);
+    my ($self, $link, @attr) = @_;
     my $channel = $self->channel;
 
     defined $link
-        or return $channel->get_value("link");
+        or return $channel->get_value('link');
 
     $channel->{'-rdf:about'} = $link;
-    $channel->set_value(link => $link, @_);
+    $channel->set_value(link => $link, @attr);
 }
 
 sub pubDate {
@@ -899,7 +890,7 @@ sub image {
         my $chan_image = $self->channel->{image} ||= {};
         $chan_image->{'-rdf:resource'} = $url;
 
-        my $image = $self->{'rdf:RDF'}->{image} ||= {};
+        my $image = $self->docroot->{image} ||= {};
         $image->{'-rdf:about'} = $url;
         $image->{url}   = $url;
         $image->{title} = $title if defined $title;
@@ -907,7 +898,7 @@ sub image {
         return undef;
     }
 
-    if(my $image = $self->{'rdf:RDF'}->{image} ) {
+    if(my $image = $self->docroot->{image} ) {
         return wantarray
           ? @{$image}{ qw/url title link/ }
           : $image->{url};
@@ -928,10 +919,10 @@ our @ISA = 'XML::FeedPP::Element';
 package XML::FeedPP::RDF::Item;
 our @ISA = 'XML::FeedPP::Item';
 
-sub title       { shift->get_or_set( "title",       @_ ); }
-sub description { shift->get_or_set( "description", @_ ); }
-sub category    { shift->get_set_array( "dc:subject",  @_ ); }
-sub guid { undef; }    # this element is NOT supported for RDF
+sub title       { shift->get_or_set(title        => @_ ) }
+sub description { shift->get_or_set(description =>  @_ ) }
+sub category    { shift->get_set_array("dc:subject" => @_ ) }
+sub guid        { undef }    # this element is NOT supported for RDF
 
 sub author {
     my ($self, $author) = @_;
@@ -942,11 +933,11 @@ sub author {
 }
 
 sub link {
-    my ($self, $link) = (shift, shift);
+    my ($self, $link, @attr) = @_;
     defined $link or return $self->get_value("link");
 
     $self->{'-rdf:about'} = $link;
-    $self->set_value(link => $link, @_);
+    $self->set_value(link => $link, @attr);
 }
 
 sub pubDate {
@@ -968,10 +959,16 @@ our @ISA = 'XML::FeedPP';
 
 use Scalar::Util qw(reftype);
 
+sub docroot { shift->{feed} }
+sub channel { shift->{feed} }
+sub set     { shift->docroot->set(@_) }
+sub get     { shift->docroot->get(@_) }
+sub entries { shift->docroot->{entry} ||= [] }
+
 sub merge_native_channel {
     my $self = shift;
     my $tree = shift or return;
-    XML::FeedPP::Util::merge_hash( $self->{feed}, $tree->{feed}, 'entry');
+    XML::FeedPP::Util::merge_hash($self->docroot, $tree->docroot, 'entry');
 }
 
 sub add_item {
@@ -982,25 +979,25 @@ sub add_item {
          or Carp::croak "add_item needs an argument";
 
     if ( ref $link ) {
-        return $self->add_clone_item( $link );
+        return $self->add_clone_item($link);
     }
 
     my $item = $self->item_class->new(@rest);
     $item->link($link) if $link;
     $item->elements(@$init) if ref $init;
-    push @{ $self->{feed}->{entry} }, $item;
+    push @{$self->entries}, $item;
 
     $item;
 }
 
 sub clear_item {
     my $self = shift;
-    $self->{feed}->{entry} = [];
+    $self->docroot->{entry} = [];
 }
 
 sub remove_item {
     my ($self, $remove) = @_;
-    my $list   = $self->{feed}{entry} or return;
+    my $list   = $self->entries or return;
 
     my @deleted;
     if ( $remove =~ /^-?\d+/ ) {
@@ -1016,13 +1013,13 @@ sub remove_item {
 
 sub get_item {
     my ($self, $num) = @_;
-    my $entries = $self->{feed}{entry} ||= [];
+    my $entries = $self->entries;
     defined $num ? $entries->[$num] : @$entries;
 }
 
 sub sort_item {
     my $self = shift;
-    my $list = $self->{feed}->{entry} or return;
+    my $list = $self->entries;
 
     my @epoch  = map { $_->get_pubDate_epoch() || 0 } @$list;
     my @sorted = map $list->[$_], sort { $epoch[$b] <=> $epoch[$a] } 0 .. $#$list;
@@ -1032,7 +1029,7 @@ sub sort_item {
 
 sub uniq_item {
     my $self  = shift;
-    my $list  = $self->{feed}{entry} or return;
+    my $list  = $self->entries or return;
     my (%check, @uniq);
     foreach my $item (@$list) {
         my $link = $item->guid;
@@ -1043,37 +1040,34 @@ sub uniq_item {
 
 sub limit_item {
     my ($self, $limit) = @_;
-    my $list  = $self->{feed}->{entry} or return;
-    if ( $limit > 0 && $limit < @$list ) {
+    my $list  = $self->entries or return;
+
+    if($limit > 0 && $limit < @$list) {
         @$list = splice @$list, 0, $limit;   # remove from end
     }
-    elsif ( $limit < 0 && -$limit < @$list ) {
+    elsif($limit < 0 && -$limit < @$list) {
         @$list = splice @$list, $limit;      # remove from start
     }
     scalar @$list;
 }
 
-sub docroot { shift->{feed}; }
-sub channel { shift->{feed}; }
-sub set     { shift->{feed}->set(@_); }
-sub get     { shift->{feed}->get(@_); }
-
 sub language {
     my ($self, $lang) = @_;
-    defined $lang or return $self->{feed}->{'-xml:lang'};
-    $self->{feed}->{'-xml:lang'} = $lang;
+    defined $lang or return $self->docroot->{'-xml:lang'};
+    $self->docroot->{'-xml:lang'} = $lang;
 }
 
 sub image {
     my ($self, $href, $title) = @_;
 
-    my $link   = $self->{feed}{link} || [];
+    my $feed   = $self->docroot;
+    my $link   = $feed->{link} ||= [];
     my @links  = reftype $link eq 'HASH' ? $link : @$link;
     (my $icon) = grep ref $_ && defined $_->{-rel} && $_->{-rel} eq 'icon',
         @links;
 
     if (defined $href) {
-        my $rext = join( "|", map {"\Q$_\E"} keys %$XML::FeedPP::MIME_TYPES );
+        my $rext = join "|", map {"\Q$_\E"} keys %$XML::FeedPP::MIME_TYPES;
         my $ext  = ( $href =~ m#[^/]\.($rext)(\W|$)#i )[0];
         my $type = $XML::FeedPP::MIME_TYPES->{$ext} if $ext;
 
@@ -1091,13 +1085,9 @@ sub image {
             $newicon{-type}  = $type  if $type;
             $newicon{-title} = $title if $title;
 
-            my $flink = $self->{feed}{link} ||= [];
-            if (reftype $flink eq 'HASH') {
-                $self->{feed}{link} = [ $flink, \%newicon ];
-            }
-            else {
-                push @$flink, \%newicon;
-            }
+            if(reftype $link eq 'HASH')
+                 { $feed->{link} = [ $link, \%newicon ] }
+            else { push @$link, \%newicon }
         }
         return;
     }
@@ -1114,15 +1104,11 @@ sub image {
 package XML::FeedPP::Atom::Atom03;
 our @ISA = 'XML::FeedPP::Atom::Common';
 
-use Scalar::Util  qw(reftype);
+use Scalar::Util  qw(reftype blessed);
+use List::Util    qw(first);
 
-sub channel_class {
-    'XML::FeedPP::Atom::Atom03::Feed';
-}
-
-sub item_class {
-    'XML::FeedPP::Atom::Atom03::Entry';
-}
+sub channel_class { 'XML::FeedPP::Atom::Atom03::Feed' }
+sub item_class    { 'XML::FeedPP::Atom::Atom03::Entry' }
 
 sub test_feed {
     my $thing  = shift;
@@ -1142,28 +1128,29 @@ sub init_feed {
     reftype $feed eq 'HASH'
         or Carp::croak "Invalid Atom 0.3 feed format: $feed";
 
-    $self->channel_class->ref_bless($feed);
+    blessed $feed or bless $feed, $self->channel_class;
     $self->xmlns(xmlns => $XML::FeedPP::XMLNS_ATOM03);
     $feed->{-version} ||= $XML::FeedPP::ATOM03_VERSION;
 
-    my $items = $feed->{entry} ||= [];
+    my $items = $self->entries;
     if (reftype $items eq 'HASH') {
         $items = $feed->{entry} = [ $items ];
     }
-    $self->item_class->ref_bless($_) for @$items;
+
+    bless $_, $self->item_class for grep !blessed($_), @$items;
     $feed->{author} ||= { name => '' };    # dummy for validation
     $self;
 }
 
 sub title {
     my ($self, $title) = @_;
-    defined $title or return $self->{feed}->get_value('title');
-    $self->{feed}->set_value(title => $title, type => 'text/plain');
+    defined $title or return $self->docroot->get_value('title');
+    $self->docroot->set_value(title => $title, type => 'text/plain');
 }
 
 sub description {
     my ($self, $descr) = @_;
-    my $feed = $self->{feed};
+    my $feed = $self->docroot;
     defined $descr
         or return $feed->get_value('tagline') || $feed->get_value('subtitle');
 
@@ -1174,11 +1161,11 @@ sub pubDate {
     my ($self, $date) = @_;
     defined $date or return $self->get_pubDate_w3cdtf;
 
-    $self->{feed}->set_value(modified => XML::FeedPP::Util::get_w3cdtf($date));
+    $self->docroot->set_value(modified => XML::FeedPP::Util::get_w3cdtf($date));
 }
 
 sub get_pubDate_native {
-    my $feed = shift->{feed};
+    my $feed = shift->docroot;
        $feed->get_value('modified')     # Atom 0.3
     || $feed->get_value('updated');     # Atom 1.0
 }
@@ -1187,7 +1174,7 @@ sub get_pubDate_native {
 
 sub copyright {
     my ($self, $copy) = @_;
-    my $feed = $self->{feed};
+    my $feed = $self->docroot;
     defined $copy
         or return $feed->get_value('copyright') || $feed->get_value('rights');
 
@@ -1197,35 +1184,27 @@ sub copyright {
 sub link {
     my ($self, $href) = @_;
 
-    my $link = $self->{feed}->{link} || [];
-    $link = [ $link ] if reftype $link eq 'HASH';
-    $link = [ grep ref $_, @$link ];
-    $link = [ grep {
-        ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
-    } @$link ];
-    $link = [ grep {
-        ! exists $_->{'-type'} || $_->{'-type'} =~ m#^text/(x-)?html#i
-    } @$link ];
-    my $html = shift @$link;
+    my $feed  = $self->docroot;
+    my $link  = $feed->{link} ||= [];
+    my @links = reftype $link eq 'HASH' ? $link : @$link;
 
-    if ( defined $href ) {
-        if ( ref $html ) {
-            $html->{'-href'} = $href;
+    my $html  = first
+      { ref
+        && ( ! exists $_->{-rel}  || $_->{-rel} eq 'alternate')
+        && ( ! exists $_->{-type} || $_->{-type} =~ m#^text/(x-)?html#i)
+      } @links;
+
+    if(defined $href) {
+        if(ref $html) {
+            $html->{-href} = $href;
+            return;
         }
-        else {
-            my $hash = {
-                -rel    =>  'alternate',
-                -type   =>  'text/html',
-                -href   =>  $href,
-            };
-            my $flink = $self->{feed}->{link} ||= [];
-            if (reftype $flink eq 'HASH') {
-                $self->{feed}{link} = [ $flink, $hash ];
-            }
-            else {
-                push @$flink, $hash;
-            }
-        }
+
+        my %add = (-rel => 'alternate', -type => 'text/html', -href => $href);
+        if(reftype $link eq 'HASH')
+             { $feed->{link} = [ $link, \%add ] }
+        else { push @$link, \%add }
+
         return;
     }
 
@@ -1236,15 +1215,11 @@ sub link {
 package XML::FeedPP::Atom::Atom10;
 our @ISA = 'XML::FeedPP::Atom::Common';
 
-use Scalar::Util  qw(reftype);
+use Scalar::Util  qw(reftype blessed);
+use List::Util    qw(first);
 
-sub channel_class {
-    'XML::FeedPP::Atom::Atom10::Feed';
-}
-
-sub item_class {
-    'XML::FeedPP::Atom::Atom10::Entry';
-}
+sub channel_class { 'XML::FeedPP::Atom::Atom10::Feed' }
+sub item_class    { 'XML::FeedPP::Atom::Atom10::Entry' }
 
 sub test_feed {
     my $thing  = shift;
@@ -1264,7 +1239,7 @@ sub init_feed {
     reftype $feed eq 'HASH'
         or Carp::croak "Invalid Atom 1.0 feed format: $feed";
 
-    $self->channel_class->ref_bless($feed);
+    blessed $feed or bless $feed, $self->channel_class;
     $self->xmlns(xmlns => $XML::FeedPP::XMLNS_ATOM10 );
 #   $feed->{-version} ||= $XML::FeedPP::ATOM10_VERSION;
 
@@ -1272,25 +1247,26 @@ sub init_feed {
     if (reftype $items eq 'HASH') {
         $items = $feed->{entry} = [ $items ];
     }
-    $self->item_class->ref_bless($_) for @$items;;
+    bless $_, $self->item_class for grep !blessed($_), @$items;;
     $self;
 }
 
 sub title {
-    my ($self, $title) = (shift, shift);
-    defined $title or return $self->{feed}->get_value('title');
-    $self->{feed}->set_value(title => $title, @_);
+    my ($self, $title, @attr) = @_;
+    my $feed = $self->docroot;
+    defined $title or return $feed->get_value('title');
+    $feed->set_value(title => $title, @attr);
 }
 
 sub description {
-    my ($self, $descr) = (shift, shift);
-    my $feed = $self->{feed};
+    my ($self, $descr, @attr) = @_;
+    my $feed = $self->docroot;
 
-    defined $descr
-        or return $feed->get_value('content')  || $feed->get_value('summary')
-               || $feed->get_value('subtitle') || $feed->get_value('tagline');
+    defined $descr or return
+        $feed->get_value('content')  || $feed->get_value('summary')
+     || $feed->get_value('subtitle') || $feed->get_value('tagline');
 
-    $feed->set_value(content => $descr, @_);     # type => 'text'
+    $feed->set_value(content => $descr, @attr);     # type => 'text'
 }
 
 sub pubDate {
@@ -1319,35 +1295,25 @@ sub copyright {
 }
 
 sub link {
-    my $self = shift;
-    my $href = shift;
+    my ($self, $href) = @_;
 
-    my $link = $self->{feed}->{link} || [];
-    $link = [$link] if reftype $link eq 'HASH';
-    $link = [ grep { ref $_ } @$link ];
-    $link = [ grep {
-        ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
-    } @$link ];
-    my $html = shift @$link;
+    my $link  = $self->{feed}{link} ||= [];
+    my @links = reftype $link eq 'HASH' ? $link : @$link;
+    my $html  = first
+       { ref && ( ! exists $_->{-rel} || $_->{-rel} eq 'alternate') } @links;
 
-    if ( defined $href ) {
-        if (ref $html) {
+    if(defined $href) {
+        if(ref $html) {
             $html->{-href} = $href;
+            return;
         }
-        else {
-            my $hash = {
-                -rel    =>  'alternate',
-                -href   =>  $href,
-            };
-            my $flink = $self->{feed}{link} ||= [];
-            if (reftype $flink eq 'HASH') {
-                $self->{feed}{link} = [ $flink, $hash ];
-            }
-            else {
-                push @$flink, $hash;
-            }
-        }
-        return;
+
+        my %add = (-rel => 'alternate', -href => $href);
+        if (reftype $link eq 'HASH')
+             { $self->feed->{link} = [ $link, \%add ] }
+        else { push @$link, \%add }
+
+       return;
     }
 
     ref $html ? $html->{-href} : undef;
@@ -1377,19 +1343,14 @@ use Scalar::Util  qw(reftype);
 #    considered part of the content.
 
 sub _fetch_value {
-    my $self  = shift;
-    my $value = shift;
+    my ($self, $value) = @_;
 
-    if (reftype $value eq 'HASH'
-        && exists $value->{'-type'}
-        && ($value->{'-type'} eq "xhtml")) {
-        my $child = [ grep { /^[^\-\#]/ } keys %$value ];
-        if (@$child == 1) {
-            my $div = shift @$child;
-            if ($div =~ /^([^:]+:)?div$/i) {
-                return $value->{$div};
-            }
-        }
+    if(reftype $value eq 'HASH' && exists $value->{-type}
+        && $value->{-type} eq 'xhtml') {
+        my @childs = grep /^[^\-\#]/, keys %$value;
+
+        return $value->{$childs[0]}
+            if @childs==1 && $childs[0] =~ /^(?:[^:]+:)?div$/i;
     }
 
     $self->SUPER::_fetch_value($value);
@@ -1408,16 +1369,16 @@ package XML::FeedPP::Atom::Common::Entry;
 our @ISA = 'XML::FeedPP::Item';
 
 sub author {
-    my ($self, $name) = @_;
-    unless (defined $name) {
-        my $author = $self->{author}{name} if ref $self->{author};
-        return $author;
+    my ($self, $attr) = @_;
+    unless(defined $attr) {
+        my $author = $self->{author} || {};
+        return $author->{name};
     }
-    my $author = ref $name ? $name : { name => $name };
-    $self->{author} = $author;
+
+    $self->{author} = ref $attr ? $attr : { name => $attr };
 }
 
-sub guid { shift->get_or_set( 'id', @_ ); }
+sub guid { shift->get_or_set(id => @_) }
 
 *_fetch_value = \&XML::FeedPP::Atom::Common::Feed::_fetch_value;
 
@@ -1425,7 +1386,8 @@ sub guid { shift->get_or_set( 'id', @_ ); }
 package XML::FeedPP::Atom::Atom03::Entry;
 our @ISA = 'XML::FeedPP::Atom::Common::Entry';
 
-use Scalar::Util  qw(reftype);
+use Scalar::Util qw(reftype);
+use List::Util   qw(first);
 
 sub description {
     my ($self, $descr) = @_;
@@ -1442,37 +1404,28 @@ sub description {
 sub link {
     my ($self, $href) = @_;
 
-    my $link = $self->{link} || [];
-    $link = [$link] if reftype $link eq 'HASH';
-    $link = [ grep { ref $_ } @$link ];
-    $link = [ grep {
-        ! exists $_->{'-rel'} || $_->{'-rel'} eq 'alternate'
-    } @$link ];
-    $link = [ grep {
-        ! exists $_->{'-type'} || $_->{'-type'} =~ m#^text/(x-)?html#i
-    } @$link ];
-    my $html = shift @$link;
+    my $link  = $self->{link} ||= [];
+	my @links = reftype $link eq 'HASH' ? $link : @$link;
 
-    if ( defined $href ) {
-        if ( ref $html ) {
-            $html->{'-href'} = $href;
-        }
-        else {
-            my $hash = {
-                -rel  => 'alternate',
-                -type => 'text/html',
-                -href => $href,
-            };
+    my $html  = first
+      { ref
+        && ( ! exists $_->{-rel}  || $_->{-rel} eq 'alternate')
+        && ( ! exists $_->{-type} || $_->{-type} =~ m#^text/(x-)?html#i )
+      } @links;
 
-            my $flink = $self->{link} ||= [];
-            if (reftype $flink eq 'HASH') {
-                $self->{link} = [ $flink, $hash ];
-            }
-            else {
-                push @$flink, $hash;
-            }
-        }
+    if(defined $href) {
         defined $self->guid or $self->guid($href);
+
+        if(ref $html) {
+            $html->{-href} = $href;
+            return;
+        }
+
+        my %add = (-rel => 'alternate', -type => 'text/html', -href => $href);
+        if(reftype $link eq 'HASH')
+             { $self->{link} = [ $link, \%add ] }
+        else { push @$link, \%add }
+
         return;
     }
 
@@ -1512,49 +1465,43 @@ package XML::FeedPP::Atom::Atom10::Entry;
 our @ISA = 'XML::FeedPP::Atom::Common::Entry';
 
 use Scalar::Util  qw(reftype);
+use List::Util    qw(first);
 
 sub description {
-    my ($self, $descr) = @_;
+    my ($self, $descr, @attr) = @_;
     defined $descr
         or return $self->get_value('content') || $self->get_value('summary');
 
-    $self->set_value(content => $descr, @_ );
+    $self->set_value(content => $descr, @attr);
 }
 
 sub link {
     my ($self, $href) = @_;
 
-    my $link  = $self->{link} || [];
+    my $link  = $self->{link} ||= [];
     my @links = reftype $link eq 'HASH' ? $link : @$link;
-    (my $html) = grep ! exists $_->{-rel} || $_->{-rel} eq 'alternate',
-        grep ref, @links;
 
-    if (defined $href) {
-        if (ref $html) { # Change
-            $html->{-href} = $href;
-        }
-        else { # Add
-            my $add   = { -href   =>  $href };
-            my $flink = $self->{link} ||= [];
-            if (reftype $flink eq 'HASH') {
-                $self->{link} = [ $flink, $add ];
-            }
-            else {
-                push @$flink, $add;
-            }
-        }
+    my $html  = first
+      { ref && (! exists $_->{-rel} || $_->{-rel} eq 'alternate') } @links;
 
+    if(defined $href) {
         defined $self->guid
             or $self->guid($href);
+
+        if(ref $html) {
+            $html->{-href} = $href;
+            return;
+        }
+
+        my %add = (-href =>  $href);
+        if (reftype $link eq 'HASH')
+             { $self->{link} = [ $link, \%add ] }
+        else { push @$link, \%add }
 
         return;
     }
 
-    if (ref $html) {
-        return $html->{'-href'};
-    }
-
-    undef;
+    ref $html ? $html->{-href} : undef;
 }
 
 sub pubDate {
@@ -1603,15 +1550,11 @@ sub category {
 package XML::FeedPP::Element;
 
 use Scalar::Util  qw(reftype);
+use List::Util    qw(first);
 
 sub new {
     my $class = shift;
     bless { @_ }, $class;
-}
-
-sub ref_bless {
-    my ($class, $hash) = @_;
-    bless $hash, $class;
 }
 
 sub set {
@@ -1704,32 +1647,32 @@ sub get {
 
     if (reftype $node->{$tagname} eq 'ARRAY') {
          my @list = map { ref $_ ? $_->{'#text'} : $_ } @{$node->{$tagname}};
-         return @list if wantarray;
-         return (grep defined, @list)[0];
+         return wantarray ? @list : first {defined} @list;
     }
 
     return $node->{$tagname}->{'#text'};
 }
 
 sub get_set_array {
-    my $self = shift;
-    my $elem = shift;
-    my $value = shift;
-    if ( ref $value ) {
+    my ($self, $elem, $value, @attr) = @_;
+    if(ref $value) {
         $self->{$elem} = $value;
-    } elsif ( defined $value ) {
-        $value = [ $value, @_ ] if @_;
-        $self->{$elem} = $value;
-    } else {
-        my @ret = $self->get_value($elem);
-        return @ret > 1 ? \@ret : $ret[0];
+        return;
     }
+
+    if(defined $value) {
+        $value = [ $value, @attr ] if @attr;
+        $self->{$elem} = $value;
+        return;
+    }
+
+    my @ret = $self->get_value($elem);
+    @ret > 1 ? \@ret : $ret[0];
 }
 
 sub get_or_set {
-    my ($self, $elem) = (shift, shift);
-    return $self->set_value($elem, @_) if @_;
-
+    my ($self, $elem, @attr) = @_;
+    return $self->set_value($elem, @attr) if @attr;
     $self->get_value($elem);
 }
 
@@ -1821,12 +1764,14 @@ sub set_attr {
 # ----------------------------------------------------------------
 package XML::FeedPP::Util;
 
+use Time::Local  qw(timegm);
+
 my @DoW = qw(Sun Mon Tue Wed Thu Fri Sat);
 my @MoY = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
 my %MoY; @MoY{ map uc($_), @MoY } = ( 1 .. 12 );
 my $tz_now = time();
-my $tz_offset = Time::Local::timegm( localtime($tz_now) ) -
-                Time::Local::timegm( gmtime($tz_now) );
+my $tz_offset = timegm( localtime($tz_now) ) -
+                timegm( gmtime($tz_now) );
 my $tz_hour = int( $tz_offset / 3600 );
 my $tz_min  = int( $tz_offset / 60 ) % 60;
 
@@ -1851,7 +1796,7 @@ sub epoch_to_w3cdtf {
     my $epoch = shift;
     defined $epoch or return;
 
-    my ($sec, $min, $hour, $day, $mon, $year) = gmtime($epoch+$tz_offset);
+    my ($sec, $min, $hour, $day, $mon, $year) = gmtime($epoch + $tz_offset);
     $year += 1900;
     $mon++;
     my $tz = $tz_offset ? sprintf('%+03d:%02d', $tz_hour, $tz_min) : 'Z';
@@ -1873,21 +1818,23 @@ sub rfc1123_to_w3cdtf {
     my $str = shift;
     defined $str or return;
 
-    my ( $mday, $mon, $year, $hour, $min, $sec, $tz ) = ( $str =~ $rfc1123_regexp );
+    my ($mday, $mon, $year, $hour, $min, $sec, $tz) = $str =~ $rfc1123_regexp;
     ($year && $mon && $mday) or return;
 
     $year += 2000 if $year < 77;
     $year += 1900 if $year < 100;
 
     $mon = $MoY{ uc($mon) } or return;
-    if ( defined $tz && $tz ne '' && $tz ne 'GMT' ) {
+    if(defined $tz && $tz ne '' && $tz ne 'GMT') {
         my $off = get_tz_offset($tz) / 60;
         $tz = sprintf( '%+03d:%02d', $off/60, $off%60 );
     }
     else {
         $tz = 'Z';
     }
-    sprintf '%04d-%02d-%02dT%02d:%02d:%02d%s', $year, $mon, $mday, $hour, $min, $sec,$tz;
+
+    sprintf '%04d-%02d-%02dT%02d:%02d:%02d%s',
+        $year, $mon, $mday, $hour, $min, $sec, $tz;
 }
 
 sub w3cdtf_to_rfc1123 {
@@ -1900,7 +1847,7 @@ sub w3cdtf_to_rfc1123 {
     $hour ||= 0;
     $min  ||= 0;
     $sec  ||= 0;
-    my $epoch = eval { Time::Local::timegm( $sec, $min, $hour, $mday, $mon-1, $year ) }
+    my $epoch = eval { timegm( $sec, $min, $hour, $mday, $mon-1, $year ) }
         or return;
 
     my $wday = ( gmtime($epoch) )[6];
@@ -1924,9 +1871,9 @@ sub rfc1123_to_epoch {
 
     $year += 2000 if $year < 77;
     $year += 1900 if $year < 100;
-    $mon   = $MoY{ uc($mon) } or return;
+    $mon   = $MoY{ uc $mon } or return;
 
-    my $epoch = eval { Time::Local::timegm($sec, $min, $hour, $mday, $mon-1, $year) }
+    my $epoch = eval { timegm($sec, $min, $hour, $mday, $mon-1, $year) }
         or return;
     $epoch -= get_tz_offset( $tz );
     $epoch;
@@ -1936,13 +1883,13 @@ sub w3cdtf_to_epoch {
     my $str = shift;
     defined $str or return;
 
-    my ($year, $mon, $mday, $hour, $min, $sec, $tz ) = $str =~ $w3cdtf_regexp;
+    my ($year, $mon, $mday, $hour, $min, $sec, $tz) = $str =~ $w3cdtf_regexp;
     $year > 1900 && $mon && $mday or return;
 
     $hour ||= 0;
     $min  ||= 0;
     $sec  ||= 0;
-    my $epoch = eval { Time::Local::timegm($sec, $min, $hour, $mday, $mon-1, $year) }
+    my $epoch = eval { timegm($sec, $min, $hour, $mday, $mon-1, $year) }
         or return;
 
     $epoch -= get_tz_offset( $tz );
@@ -2056,12 +2003,12 @@ Generate an RDF file and save it:
 Convert some RSS/RDF files to Atom format:
 
     use XML::FeedPP ();
-    my $feed = XML::FeedPP::Atom::Atom10->new();        # create empty atom file
-    $feed->merge( "rss.xml" );                          # load local RSS file
-    $feed->merge( "http://www.kawa.net/index.rdf" );    # load remote RDF file
+    my $feed = XML::FeedPP::Atom::Atom10->new();   # create empty atom file
+    $feed->merge("rss.xml");                       # load local RSS file
+    $feed->merge("http://www.kawa.net/index.rdf"); # load remote RDF file
     my $now = time();
-    $feed->pubDate( $now );                             # touch date
-    my $atom = $feed->to_string();                      # get Atom source code
+    $feed->pubDate( $now );                        # touch date
+    my $atom = $feed->to_string();                 # get Atom source code
 
 =head1 DESCRIPTION
 
